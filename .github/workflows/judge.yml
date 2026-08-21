@@ -58,9 +58,9 @@ jobs:
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
               # 使用 trusted=yes 绕过签名问题
-              echo "deb [trusted=yes] https://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
+              echo "deb [trusted=yes] http://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
               sudo apt-get update
-              sudo apt-get install -y liberty-eiffel
+              sudo apt-get install -y liberty-eiffel-all
               ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
