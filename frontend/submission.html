@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 提交详情</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>📄 提交详情 #<span id="rid-display"></span></h1>
+    <div id="submission-info" class="card"></div>
+    <div id="code-area" class="card" style="margin-top:1rem;">
+      <h3>代码</h3>
+      <pre id="code-content"></pre>
+    </div>
+    ${ /* 如果是管理员，显示取消按钮 */ }
+    <div id="admin-actions"></div>
+  </div>
+  <script type="module">
+    import { getSubmission, cancelSubmission, getUserInfo, logout } from '/js/api.js';
+    // 导航栏略
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const params = new URLSearchParams(location.search);
+    const rid = parseInt(params.get('rid'));
+    if (!rid) { document.body.innerHTML += '<p>缺少参数</p>'; }
+
+    const data = await getSubmission(rid);
+    document.getElementById('rid-display').textContent = rid;
+    document.getElementById('submission-info').innerHTML = `
+      <p><strong>用户：</strong>${data.username}</p>
+      <p><strong>题目：</strong><a href="/problem.html?id=${data.problem_id}">${data.problem_title || data.problem_id}</a></p>
+      <p><strong>语言：</strong>${data.language}</p>
+      <p><strong>状态：</strong><span class="status-${data.status}">${data.status}</span></p>
+      <p><strong>耗时：</strong>${data.time_used ?? '-'}ms</p>
+      <p><strong>内存：</strong>${data.memory_used ?? '-'}MB</p>
+      <p><strong>提交时间：</strong>${new Date(data.created_at).toLocaleString()}</p>
+      ${data.finished_at ? `<p><strong>完成时间：</strong>${new Date(data.finished_at).toLocaleString()}</p>` : ''}
+      ${data.result ? `<p><strong>结果详情：</strong><pre>${data.result}</pre></p>` : ''}
+    `;
+
+    // 代码仅当是自己或管理员才显示
+    const user = getUserInfo();
+    if (user && (user.uid === data.uid || user.isAdmin)) {
+      document.getElementById('code-content').textContent = data.code || '（无代码）';
+    } else {
+      document.getElementById('code-content').textContent = '（你无权查看此代码）';
+    }
+
+    // 管理员取消功能
+    if (user && user.isAdmin) {
+      document.getElementById('admin-actions').innerHTML = `
+        <button class="btn btn-danger" id="cancel-btn">取消/无效化此提交</button>
+      `;
+      document.getElementById('cancel-btn').addEventListener('click', async () => {
+        if (confirm('确定要取消此提交吗？')) {
+          await cancelSubmission(rid);
+          alert('已取消');
+          location.reload();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
