@@ -15,8 +15,14 @@ export function getUserInfo() {
   if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return { uid: payload.uid, username: payload.username };
-  } catch { return null; }
+    return {
+      uid: payload.uid,
+      username: payload.username || '用户',
+      isAdmin: payload.admin || false
+    };
+  } catch {
+    return null;
+  }
 }
 
 // 通用 fetch
