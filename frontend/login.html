@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 登录</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container" style="max-width: 400px; margin: 4rem auto;">
+    <h1>登录</h1>
+    <div class="card">
+      <form id="login-form">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-success">登录</button>
+        <p style="margin-top: 1rem;">还没有账号？<a href="/register.html">立即注册</a></p>
+      </form>
+      <div id="error" style="color: red; margin-top: 0.5rem;"></div>
+    </div>
+  </div>
+  <script type="module">
+    import { login, getUserInfo } from '/js/api.js';
+    // 填充导航栏
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    if (user) location.href = '/index.html';
+    nav.innerHTML = `<div class="logo"><span>C</span>BOJ</div><div><a href="/index.html">首页</a></div><div class="right"><a href="/login.html">登录</a><a href="/register.html">注册</a></div>`;
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      try {
+        await login(username, password);
+        location.href = '/index.html';
+      } catch (err) {
+        document.getElementById('error').textContent = '登录失败：' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
