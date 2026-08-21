@@ -35,15 +35,25 @@
         <textarea id="test_cases" rows="5" required>[{"input":"1 2","output":"3"}]</textarea>
       </div>
       <button type="submit" class="btn btn-success">保存</button>
+      <a href="/admin/problems.html" class="btn" style="background: #6c757d; margin-left: 0.5rem;">返回列表</a>
     </form>
     <div id="error" style="color:red; margin-top:1rem;"></div>
   </div>
   <script type="module">
-    import { getProblem, createProblem, updateProblem, getUserInfo, logout } from '/js/api.js';
+    import { getProblem, createProblem, updateProblem, getUserInfo } from '/js/api.js';
 
+    // ✅ 1. 先获取用户信息（必须在导航栏渲染之前）
+    const user = getUserInfo();
+
+    // ✅ 2. 检查管理员权限
+    if (!user || !user.isAdmin) {
+      location.href = '/index.html';
+    }
+
+    // ✅ 3. 渲染导航栏（此时 user 已定义）
     const nav = document.getElementById('navbar');
     nav.innerHTML = `
-      <div class="logo"><span>CB</span>OJ</div>
+      <div class="logo"><span>C</span>BOJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
@@ -57,35 +67,66 @@
                 : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
       </div>
     `;
-    // 检查管理员权限
-    const user = getUserInfo();
-    if (!user || !user.isAdmin) { location.href = '/index.html'; }
 
+    // ✅ 4. 处理编辑/新建逻辑
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const isEdit = !!id;
+    
     if (isEdit) {
       document.getElementById('form-title').textContent = '编辑题目';
-      const problem = await getProblem(id);
-      document.getElementById('id').value = problem.id;
-      document.getElementById('id').readOnly = true;
-      document.getElementById('title').value = problem.title;
-      document.getElementById('description').value = problem.description;
-      document.getElementById('time_limit').value = problem.time_limit;
-      document.getElementById('memory_limit').value = problem.memory_limit;
-      document.getElementById('test_cases').value = problem.test_cases;
+      try {
+        const problem = await getProblem(id);
+        if (problem) {
+          document.getElementById('id').value = problem.id;
+          document.getElementById('id').readOnly = true;
+          document.getElementById('title').value = problem.title;
+          document.getElementById('description').value = problem.description;
+          document.getElementById('time_limit').value = problem.time_limit;
+          document.getElementById('memory_limit').value = problem.memory_limit;
+          // 美化 JSON 显示
+          try {
+            const testCases = JSON.parse(problem.test_cases);
+            document.getElementById('test_cases').value = JSON.stringify(testCases, null, 2);
+          } catch {
+            document.getElementById('test_cases').value = problem.test_cases;
+          }
+        }
+      } catch (err) {
+        document.getElementById('error').textContent = '加载题目失败：' + err.message;
+      }
     }
 
+    // ✅ 5. 提交表单
     document.getElementById('problem-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const data = {
-        id: document.getElementById('id').value,
-        title: document.getElementById('title').value,
-        description: document.getElementById('description').value,
-        time_limit: parseInt(document.getElementById('time_limit').value),
-        memory_limit: parseInt(document.getElementById('memory_limit').value),
-        test_cases: JSON.parse(document.getElementById('test_cases').value),
-      };
+      document.getElementById('error').textContent = '';
+
+      const id = document.getElementById('id').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const time_limit = parseInt(document.getElementById('time_limit').value);
+      const memory_limit = parseInt(document.getElementById('memory_limit').value);
+      let test_cases;
+
+      // ✅ 校验 + 解析 JSON
+      try {
+        test_cases = JSON.parse(document.getElementById('test_cases').value);
+        if (!Array.isArray(test_cases) || test_cases.length === 0) {
+          throw new Error('测试点必须是非空数组');
+        }
+      } catch (err) {
+        document.getElementById('error').textContent = '测试点 JSON 格式错误：' + err.message;
+        return;
+      }
+
+      if (!id || !title || !description) {
+        document.getElementById('error').textContent = '请填写完整信息';
+        return;
+      }
+
+      const data = { id, title, description, time_limit, memory_limit, test_cases };
+
       try {
         if (isEdit) {
           await updateProblem(id, data);
