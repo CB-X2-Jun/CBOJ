@@ -22,9 +22,11 @@ jobs:
             "C++98"|"C++03"|"C++11"|"C++14"|"C++17"|"C++20"|"C++23"|"C++26")
               sudo apt-get install -y g++ ;;
             "Python2") sudo apt-get install -y python2 ;;
-            "Python3"|"PyPy3") sudo apt-get install -y python3 ;;
+            "Python3") sudo apt-get install -y python3 ;;
             "PyPy2") sudo apt-get install -y pypy ;;
-            "Java8"|"Java21") sudo apt-get install -y openjdk-21-jdk ;;
+            "PyPy3") sudo apt-get install -y pypy3 ;;
+            "Java8") sudo apt-get install -y openjdk-8-jdk ;;
+            "Java21") sudo apt-get install -y openjdk-21-jdk ;;
             "Go") sudo apt-get install -y golang-go ;;
             "Rust") sudo apt-get install -y rustc cargo ;;
             "Ruby") sudo apt-get install -y ruby-full ;;
@@ -63,7 +65,6 @@ jobs:
         env:
           RID: ${{ github.event.client_payload.rid }}
           LANG: ${{ github.event.client_payload.language }}
-          # 使用单引号包裹，避免 YAML 解析器处理特殊字符
           CODE: '${{ github.event.client_payload.code }}'
           TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
           MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
@@ -75,9 +76,32 @@ jobs:
           # 写入源代码
           case "$LANG" in
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN="./program" ;;
-            "C++"*) EXT="cpp"; COMPILE="g++ -O2 main.cpp -o program"; RUN="./program" ;;
-            "Python2"|"Python3"|"PyPy2"|"PyPy3") EXT="py"; COMPILE=""; RUN="python3 main.py" ;;
-            "Java"*) EXT="java"; COMPILE="javac Main.java"; RUN="java Main" ;;
+            "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++11") EXT="cpp"; COMPILE="g++ -std=c++11 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++14") EXT="cpp"; COMPILE="g++ -std=c++14 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++17") EXT="cpp"; COMPILE="g++ -std=c++17 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++20") EXT="cpp"; COMPILE="g++ -std=c++20 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++23") EXT="cpp"; COMPILE="g++ -std=c++23 -O2 main.cpp -o program"; RUN="./program" ;;
+            "C++26") EXT="cpp"; COMPILE="g++ -std=c++26 -O2 main.cpp -o program"; RUN="./program" ;;
+            "Python2") EXT="py"; COMPILE=""; RUN="python2 main.py" ;;
+            "Python3") EXT="py"; COMPILE=""; RUN="python3 main.py" ;;
+            "PyPy2") EXT="py"; COMPILE=""; RUN="pypy main.py" ;;
+            "PyPy3") EXT="py"; COMPILE=""; RUN="pypy3 main.py" ;;
+            "Java8")
+              EXT="java"
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+              export PATH=$JAVA_HOME/bin:$PATH
+              COMPILE="javac Main.java"
+              RUN="java Main"
+              ;;
+            "Java21")
+              EXT="java"
+              export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+              export PATH=$JAVA_HOME/bin:$PATH
+              COMPILE="javac Main.java"
+              RUN="java Main"
+              ;;
             "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN="./program" ;;
             "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN="./program" ;;
             "Ruby") EXT="rb"; COMPILE=""; RUN="ruby main.rb" ;;
@@ -154,6 +178,6 @@ jobs:
             fi
           done < /tmp/test_cases.txt
 
-          # 回传结果（确保 STATUS 和 TOTAL_TIME 正确）
+          # 回传结果
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
             -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":0}"
