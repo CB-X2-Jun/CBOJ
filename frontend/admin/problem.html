@@ -40,6 +40,23 @@
   </div>
   <script type="module">
     import { getProblem, createProblem, updateProblem, getUserInfo, logout } from '/js/api.js';
+
+    const nav = document.getElementById('navbar');
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
     // 检查管理员权限
     const user = getUserInfo();
     if (!user || !user.isAdmin) { location.href = '/index.html'; }
