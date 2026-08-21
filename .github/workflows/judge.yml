@@ -59,13 +59,13 @@ jobs:
 
       - name: Run Judge
         env:
-          RID: ${{ github.event.client_payload.rid }}
-          LANG: ${{ github.event.client_payload.language }}
-          CODE: ${{ github.event.client_payload.code }}
-          TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
-          MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
-          TEST_CASES: ${{ github.event.client_payload.testCases }}
-          CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
+          RID: '${{ github.event.client_payload.rid }}'
+          LANG: '${{ github.event.client_payload.language }}'
+          CODE: '${{ github.event.client_payload.code }}'
+          TIME_LIMIT: '${{ github.event.client_payload.timeLimit }}'
+          MEMORY_LIMIT: '${{ github.event.client_payload.memoryLimit }}'
+          TEST_CASES: '${{ github.event.client_payload.testCases }}'
+          CALLBACK_URL: '${{ github.event.client_payload.callbackUrl }}'
         run: |
           # 写入源代码
           case "$LANG" in
