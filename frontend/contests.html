@@ -13,23 +13,22 @@
       <thead><tr><th>ID</th><th>标题</th><th>开始时间</th><th>结束时间</th><th>操作</th></tr></thead>
       <tbody id="contest-body"></tbody>
     </table>
-    ${ /* 管理员创建比赛入口 */ }
     <div id="admin-contest-actions" style="margin-top:1rem;"></div>
   </div>
   <script type="module">
-    import { getContests, getUserInfo, logout } from '/js/api.js';
-    // 导航栏略
+    import { getContests, getUserInfo } from '/js/api.js';
+    
     const nav = document.getElementById('navbar');
     const user = getUserInfo();
     nav.innerHTML = `
-      <div class="logo"><span>CB</span>OJ</div>
+      <div class="logo"><span>C</span>BOJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
         <a href="/submissions.html">提交记录</a>
         <a href="/rank.html">排行榜</a>
         <a href="/contests.html">比赛</a>
-        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+        ${user && user.isAdmin ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
       </div>
       <div class="right">
         ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="localStorage.removeItem('token'); window.location.href='/index.html'">退出</button>` 
@@ -37,7 +36,6 @@
       </div>
     `;
 
-    const user = getUserInfo();
     const data = await getContests();
     const tbody = document.getElementById('contest-body');
     if (!data || data.length === 0) {
