@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 比赛</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>🏁 比赛列表</h1>
+    <table>
+      <thead><tr><th>ID</th><th>标题</th><th>开始时间</th><th>结束时间</th><th>操作</th></tr></thead>
+      <tbody id="contest-body"></tbody>
+    </table>
+    ${ /* 管理员创建比赛入口 */ }
+    <div id="admin-contest-actions" style="margin-top:1rem;"></div>
+  </div>
+  <script type="module">
+    import { getContests, getUserInfo, logout } from '/js/api.js';
+    // 导航栏略
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const user = getUserInfo();
+    const data = await getContests();
+    const tbody = document.getElementById('contest-body');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无比赛</td></tr>';
+    } else {
+      tbody.innerHTML = data.map(c => `
+        <tr>
+          <td>${c.id}</td>
+          <td><a href="/contest.html?id=${c.id}">${c.title}</a></td>
+          <td>${new Date(c.start_time).toLocaleString()}</td>
+          <td>${new Date(c.end_time).toLocaleString()}</td>
+          <td><a href="/contest.html?id=${c.id}" class="btn btn-sm">进入</a></td>
+        </tr>
+      `).join('');
+    }
+
+    if (user && user.isAdmin) {
+      document.getElementById('admin-contest-actions').innerHTML = `<a href="/admin/contest-edit.html" class="btn">创建比赛</a>`;
+    }
+  </script>
+</body>
+</html>
