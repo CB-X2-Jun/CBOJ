@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 比赛详情</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <div id="contest-header"></div>
+    <div id="contest-problems"></div>
+    <div id="contest-rank"></div>
+  </div>
+  <script type="module">
+    import { getContest, joinContest, getUserInfo, logout } from '/js/api.js';
+    // 导航栏略
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    if (!id) { document.body.innerHTML += '<p>缺少比赛ID</p>'; }
+    const contest = await getContest(id);
+    document.getElementById('contest-header').innerHTML = `
+      <h1>${contest.title}</h1>
+      <p>${contest.description || ''}</p>
+      <p>开始：${new Date(contest.start_time).toLocaleString()} | 结束：${new Date(contest.end_time).toLocaleString()}</p>
+      <button id="join-btn" class="btn">参加比赛</button>
+    `;
+
+    // 题目列表
+    const problems = JSON.parse(contest.problems || '[]');
+    document.getElementById('contest-problems').innerHTML = `
+      <h3>比赛题目</h3>
+      <ul>${problems.map(p => `<li><a href="/problem.html?id=${p}">${p}</a></li>`).join('')}</ul>
+    `;
+
+    // 参加功能
+    document.getElementById('join-btn').addEventListener('click', async () => {
+      try {
+        await joinContest(id);
+        alert('参加成功');
+      } catch (e) { alert('参加失败：' + e.message); }
+    });
+  </script>
+</body>
+</html>
