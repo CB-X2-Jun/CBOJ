@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 排行榜</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>🏆 排行榜</h1>
+    <table>
+      <thead><tr><th>#</th><th>用户</th><th>AC 数</th><th>提交总数</th></tr></thead>
+      <tbody id="rank-body"></tbody>
+    </table>
+  </div>
+  <script type="module">
+    import { getRank, getUserInfo, logout } from '/js/api.js';
+    // 导航栏略
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const data = await getRank();
+    const tbody = document.getElementById('rank-body');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">暂无数据</td></tr>';
+    } else {
+      tbody.innerHTML = data.map((r, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${r.nickname || r.username}</td>
+          <td>${r.ac_count}</td>
+          <td>${r.total_submissions}</td>
+        </tr>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
