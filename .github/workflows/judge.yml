@@ -53,9 +53,9 @@ jobs:
             "F#") sudo apt-get install -y fsharp ;;
             "D") sudo apt-get install -y gdc ;;
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
-            "Bash") echo "Bash is built-in" ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel") sudo apt-get install -y eiffelstudio ;;
+            "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
 
@@ -63,12 +63,12 @@ jobs:
         env:
           RID: ${{ github.event.client_payload.rid }}
           LANG: ${{ github.event.client_payload.language }}
-          CODE: "${{ github.event.client_payload.code }}"
+          CODE: ${{ github.event.client_payload.code }}
           TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
           MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
-          # ✅ 关键修复：使用 toJson 和 fromJson 配合，并用双引号包裹
-          TEST_CASES: "${{ toJson(github.event.client_payload.testCases) }}"
-          CALLBACK_URL: "${{ github.event.client_payload.callbackUrl }}"
+          # 假设 testCases 已经是 JSON 字符串（Worker 端已预处理）
+          TEST_CASES: ${{ github.event.client_payload.testCases }}
+          CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           # 写入源代码
           case "$LANG" in
@@ -108,7 +108,7 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="bf main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
-            "Eiffel") EXT="e"; COMPILE="ec -config main.e"; RUN="./main" ;;
+            "Eiffel") EXT="e"; COMPILE="ec -config main.e -o program"; RUN="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
@@ -123,8 +123,13 @@ jobs:
             fi
           fi
 
-          # ✅ 关键：从环境变量解析测试用例（这里 TEST_CASES 已经是 JSON 字符串）
-          echo "$TEST_CASES" | jq -c '.[]' | while read -r test; do
+          # 初始化变量
+          TOTAL_TIME=0
+          STATUS="accepted"
+
+          # 将测试用例写入临时文件，避免子 Shell 变量丢失
+          echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+          while read -r test; do
             INPUT=$(echo "$test" | jq -r '.input')
             EXPECTED=$(echo "$test" | jq -r '.output')
 
@@ -132,6 +137,7 @@ jobs:
             OUTPUT=$(echo "$INPUT" | timeout ${TIME_LIMIT:-2}s $RUN 2>&1 || echo "TLE_ERROR")
             END=$(date +%s%N)
             TIME_USED=$((($END - $START) / 1000000))
+            TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
             OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
@@ -142,11 +148,9 @@ jobs:
             elif [[ "$OUTPUT" != "$EXPECTED" ]]; then
               STATUS="wrong_answer"
               break
-            else
-              STATUS="accepted"
             fi
-          done
+          done < /tmp/test_cases.txt
 
-          # 回传结果
+          # 回传结果（TOTAL_TIME 和 STATUS 已正确保留）
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TIME_USED,\"memory_used\":0}"
+            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":0}"
