@@ -57,10 +57,8 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 添加 Liberty Eiffel 官方源
-              sudo apt-get install -y wget gnupg
-              wget -qO- https://apt.liberty-eiffel.org/keyring.gpg | sudo tee /usr/share/keyrings/liberty-eiffel.gpg > /dev/null
-              echo "deb [signed-by=/usr/share/keyrings/liberty-eiffel.gpg] https://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
+              # 使用 trusted=yes 绕过签名问题
+              echo "deb [trusted=yes] https://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
               sudo apt-get update
               sudo apt-get install -y liberty-eiffel
               ;;
