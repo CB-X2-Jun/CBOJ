@@ -53,7 +53,7 @@
         ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
       </div>
       <div class="right">
-        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="localStorage.removeItem('token'); window.location.href='/index.html'">退出</button>` 
                 : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
       </div>
     `;
