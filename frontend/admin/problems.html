@@ -16,11 +16,20 @@
     </table>
   </div>
   <script type="module">
-    import { getProblems, deleteProblem, getUserInfo, logout } from '/js/api.js';
-    // 导航栏略，且检查管理员权限（如果没有权限则跳转）
+    import { getProblems, deleteProblem, getUserInfo } from '/js/api.js';
+
+    // ✅ 1. 先获取用户信息
+    const user = getUserInfo();
+
+    // ✅ 2. 检查管理员权限（在导航栏之前或之后都可以，但导航栏需要 user）
+    if (!user || !user.isAdmin) {
+      location.href = '/index.html';
+    }
+
+    // ✅ 3. 渲染导航栏（此时 user 已定义）
     const nav = document.getElementById('navbar');
     nav.innerHTML = `
-      <div class="logo"><span>CB</span>OJ</div>
+      <div class="logo"><span>C</span>BOJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
@@ -35,23 +44,25 @@
       </div>
     `;
 
-    const user = getUserInfo();
-    if (!user || !user.isAdmin) { location.href = '/index.html'; }
-
+    // ✅ 4. 加载题目列表
     const data = await getProblems();
     const tbody = document.getElementById('problem-list');
-    tbody.innerHTML = data.map(p => `
-      <tr>
-        <td>${p.id}</td>
-        <td>${p.title}</td>
-        <td>
-          <a href="/admin/problem-edit.html?id=${p.id}" class="btn btn-sm">编辑</a>
-          <button class="btn btn-danger btn-sm" data-id="${p.id}">删除</button>
-        </td>
-      </tr>
-    `).join('');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">暂无题目</td></tr>';
+    } else {
+      tbody.innerHTML = data.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.title}</td>
+          <td>
+            <a href="/admin/problem.html?id=${p.id}" class="btn btn-sm">编辑</a>
+            <button class="btn btn-danger btn-sm" data-id="${p.id}">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
 
-    // 删除事件
+    // ✅ 5. 删除事件
     document.querySelectorAll('[data-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (confirm('确定删除此题？')) {
