@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 管理题目</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>🔧 管理题目</h1>
+    <a href="/admin/problem-edit.html" class="btn" style="margin-bottom:1rem;">+ 新建题目</a>
+    <table>
+      <thead><tr><th>题号</th><th>标题</th><th>操作</th></tr></thead>
+      <tbody id="problem-list"></tbody>
+    </table>
+  </div>
+  <script type="module">
+    import { getProblems, deleteProblem, getUserInfo, logout } from '/js/api.js';
+    // 导航栏略，且检查管理员权限（如果没有权限则跳转）
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const user = getUserInfo();
+    if (!user || !user.isAdmin) { location.href = '/index.html'; }
+
+    const data = await getProblems();
+    const tbody = document.getElementById('problem-list');
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${p.id}</td>
+        <td>${p.title}</td>
+        <td>
+          <a href="/admin/problem-edit.html?id=${p.id}" class="btn btn-sm">编辑</a>
+          <button class="btn btn-danger btn-sm" data-id="${p.id}">删除</button>
+        </td>
+      </tr>
+    `).join('');
+
+    // 删除事件
+    document.querySelectorAll('[data-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('确定删除此题？')) {
+          await deleteProblem(btn.dataset.id);
+          location.reload();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
