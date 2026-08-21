@@ -57,7 +57,7 @@
     `;
 
     // 代码仅当是自己或管理员才显示
-    const user = getUserInfo();
+    // const user = getUserInfo();
     if (user && (user.uid === data.uid || user.isAdmin)) {
       document.getElementById('code-content').textContent = data.code || '（无代码）';
     } else {
