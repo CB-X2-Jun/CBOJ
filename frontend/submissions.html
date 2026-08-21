@@ -2,40 +2,71 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>CBOJ - 评测记录</title>
+  ＜title>CBOJ - 评测记录</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav id="navbar">...</nav>
+  <nav id="navbar"></nav>
   <div class="container">
-    <h1>评测记录</h1>
-    <table id="submission-table">
+    <h1>📊 评测记录</h1>
+    <table>
       <thead><tr><th>RID</th><th>用户</th><th>题目</th><th>语言</th><th>状态</th><th>耗时</th><th>内存</th><th>提交时间</th></tr></thead>
       <tbody id="submission-body"></tbody>
     </table>
-    <div id="pagination"></div>
+    <div class="pagination" id="pagination"></div>
   </div>
   <script type="module">
-    import { getSubmissions } from '/js/api.js';
-    const params = new URLSearchParams(window.location.search);
+    import { getSubmissions, getUserInfo, logout } from '/js/api.js';
+    // 导航栏（同上，略，可复用代码）
+    // 实际使用时建议把导航栏渲染抽成单独模块，但这里为了完整性直接写
+    const user = getUserInfo();
+    const nav = document.getElementById('navbar');
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>`; // 同前
+
+    const params = new URLSearchParams(location.search);
     const page = parseInt(params.get('page')) || 1;
     const limit = 50;
     const offset = (page - 1) * limit;
-    
+
     const data = await getSubmissions(limit, offset);
     const tbody = document.getElementById('submission-body');
-    tbody.innerHTML = data.map(s => `
-      <tr>
-        <td><a href="/submission.html?rid=${s.rid}">${s.rid}</a></td>
-        <td>${s.username}</td>
-        <td><a href="/problem.html?id=${s.problem_id}">${s.problem_id}</a></td>
-        <td>${s.language}</td>
-        <td class="status-${s.status}">${s.status}</td>
-        <td>${s.time_used ?? '-'}ms</td>
-        <td>${s.memory_used ?? '-'}MB</td>
-        <td>${new Date(s.created_at).toLocaleString()}</td>
-      </tr>
-    `).join('');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无提交记录</td></tr>';
+    } else {
+      tbody.innerHTML = data.map(s => `
+        <tr>
+          <td><a href="/submission.html?rid=${s.rid}">${s.rid}</a></td>
+          <td>${s.username}</td>
+          <td><a href="/problem.html?id=${s.problem_id}">${s.problem_id}</a></td>
+          <td>${s.language}</td>
+          <td class="status-${s.status}">${s.status}</td>
+          <td>${s.time_used ?? '-'}ms</td>
+          <td>${s.memory_used ?? '-'}MB</td>
+          <td>${new Date(s.created_at).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 简单分页
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = `
+      <a href="?page=${Math.max(1, page-1)}">上一页</a>
+      <span class="active">${page}</span>
+      <a href="?page=${page+1}">下一页</a>
+    `;
   </script>
 </body>
 </html>
