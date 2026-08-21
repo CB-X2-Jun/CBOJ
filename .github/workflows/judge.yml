@@ -57,10 +57,12 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              sudo apt-get install -y software-properties-common
-              sudo add-apt-repository -y ppa:eiffelstudio/eiffelstudio
+              # 添加 Liberty Eiffel 官方源
+              sudo apt-get install -y wget gnupg
+              wget -qO- https://apt.liberty-eiffel.org/keyring.gpg | sudo tee /usr/share/keyrings/liberty-eiffel.gpg > /dev/null
+              echo "deb [signed-by=/usr/share/keyrings/liberty-eiffel.gpg] https://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
               sudo apt-get update
-              sudo apt-get install -y eiffelstudio
+              sudo apt-get install -y liberty-eiffel
               ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
@@ -139,7 +141,7 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="bf main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
-            "Eiffel") EXT="e"; COMPILE="ec -config main.e -o program"; RUN="./program" ;;
+            "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
