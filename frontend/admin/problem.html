@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 编辑题目</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container" style="max-width: 800px;">
+    <h1 id="form-title">新建题目</h1>
+    <form id="problem-form">
+      <div class="form-group">
+        <label>题号（唯一标识）</label>
+        <input type="text" id="id" required>
+      </div>
+      <div class="form-group">
+        <label>标题</label>
+        <input type="text" id="title" required>
+      </div>
+      <div class="form-group">
+        <label>题目描述（支持纯文本或简单HTML）</label>
+        <textarea id="description" rows="6" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>时间限制（ms）</label>
+        <input type="number" id="time_limit" value="1000">
+      </div>
+      <div class="form-group">
+        <label>内存限制（MB）</label>
+        <input type="number" id="memory_limit" value="256">
+      </div>
+      <div class="form-group">
+        <label>测试点（JSON 数组，每个元素含 input 和 output）</label>
+        <textarea id="test_cases" rows="5" required>[{"input":"1 2","output":"3"}]</textarea>
+      </div>
+      <button type="submit" class="btn btn-success">保存</button>
+    </form>
+    <div id="error" style="color:red; margin-top:1rem;"></div>
+  </div>
+  <script type="module">
+    import { getProblem, createProblem, updateProblem, getUserInfo, logout } from '/js/api.js';
+    // 检查管理员权限
+    const user = getUserInfo();
+    if (!user || !user.isAdmin) { location.href = '/index.html'; }
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const isEdit = !!id;
+    if (isEdit) {
+      document.getElementById('form-title').textContent = '编辑题目';
+      const problem = await getProblem(id);
+      document.getElementById('id').value = problem.id;
+      document.getElementById('id').readOnly = true;
+      document.getElementById('title').value = problem.title;
+      document.getElementById('description').value = problem.description;
+      document.getElementById('time_limit').value = problem.time_limit;
+      document.getElementById('memory_limit').value = problem.memory_limit;
+      document.getElementById('test_cases').value = problem.test_cases;
+    }
+
+    document.getElementById('problem-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        id: document.getElementById('id').value,
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        time_limit: parseInt(document.getElementById('time_limit').value),
+        memory_limit: parseInt(document.getElementById('memory_limit').value),
+        test_cases: JSON.parse(document.getElementById('test_cases').value),
+      };
+      try {
+        if (isEdit) {
+          await updateProblem(id, data);
+        } else {
+          await createProblem(data);
+        }
+        location.href = '/admin/problems.html';
+      } catch (err) {
+        document.getElementById('error').textContent = '保存失败：' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
