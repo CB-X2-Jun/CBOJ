@@ -54,6 +54,8 @@ jobs:
             "D") sudo apt-get install -y gdc ;;
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Bash") echo "Bash is built-in" ;;
+            "Powershell") sudo apt-get install -y powershell ;;
+            "Eiffel") sudo apt-get install -y eiffelstudio ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
 
@@ -105,6 +107,8 @@ jobs:
             "Dart") EXT="dart"; COMPILE="dart compile exe main.dart -o program"; RUN="./program" ;;
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="bf main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex main.tex" ;;
+            "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
+            "Eiffel") EXT="e"; COMPILE="ec -config main.e"; RUN="./main" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
