@@ -38,7 +38,7 @@ jobs:
             "Julia") sudo apt-get install -y julia ;;
             "Dart") sudo apt-get install -y dart ;;
             "Swift") sudo apt-get install -y swift ;;
-            "Brainfuck") sudo apt-get install -y bf ;;
+            "Brainfuck") sudo apt-get install -y beef ;;
             "TeX") sudo apt-get install -y texlive-binaries ;;
             "Fortran") sudo apt-get install -y gfortran ;;
             "Ada") sudo apt-get install -y gnat ;;
@@ -136,7 +136,7 @@ jobs:
             "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN="./program" ;;
             "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN="./program" ;;
             "Dart") EXT="dart"; COMPILE="dart compile exe main.dart -o program"; RUN="./program" ;;
-            "Brainfuck") EXT="bf"; COMPILE=""; RUN="bf main.bf" ;;
+            "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
