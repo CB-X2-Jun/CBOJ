@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBOJ - 首页</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>🏠 CBOJ</h1>
+    <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+      <h2>欢迎来到 CBOJ</h2>
+      <p style="font-size: 1.2rem; margin: 1rem 0;">一个轻量、免费的在线评测系统</p>
+      <p>支持 40+ 编程语言，包括 C++、Python、Rust、Go、Java……甚至 Brainfuck 和 TeX！</p>
+      <p style="margin-top: 1.5rem;">
+        <a href="/problems.html" class="btn">开始刷题</a>
+        <a href="/submissions.html" class="btn" style="background: #28a745;">查看评测记录</a>
+      </p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+      <div class="card"><h3>📚 题目</h3><p>丰富的题库，从入门到精通</p></div>
+      <div class="card"><h3>⚡ 快速评测</h3><p>基于 GitHub Actions，稳定可靠</p></div>
+      <div class="card"><h3>🏆 排行榜</h3><p>与好友一较高下</p></div>
+    </div>
+  </div>
+  <script type="module">
+    import { getUserInfo, logout } from '/js/api.js';
+    // 渲染导航栏
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>C</span>BOJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+  </script>
+</body>
+</html>
