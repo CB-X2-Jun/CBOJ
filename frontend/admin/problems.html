@@ -9,7 +9,7 @@
   <nav id="navbar"></nav>
   <div class="container">
     <h1>🔧 管理题目</h1>
-    <a href="/admin/problem-edit.html" class="btn" style="margin-bottom:1rem;">+ 新建题目</a>
+    <a href="/admin/problem.html" class="btn" style="margin-bottom:1rem;">+ 新建题目</a>
     <table>
       <thead><tr><th>题号</th><th>标题</th><th>操作</th></tr></thead>
       <tbody id="problem-list"></tbody>
@@ -19,7 +19,6 @@
     import { getProblems, deleteProblem, getUserInfo, logout } from '/js/api.js';
     // 导航栏略，且检查管理员权限（如果没有权限则跳转）
     const nav = document.getElementById('navbar');
-    const user = getUserInfo();
     nav.innerHTML = `
       <div class="logo"><span>CB</span>OJ</div>
       <div>
