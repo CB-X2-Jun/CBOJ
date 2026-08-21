@@ -1,4 +1,4 @@
-const API_BASE = 'https://cboj.x2cb.cc.cd/api';
+const API_BASE = 'https://ojapi.x2cb.cc.cd/api';
 
 // 存储 token
 export function setToken(token) {
