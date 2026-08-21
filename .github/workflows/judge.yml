@@ -59,13 +59,14 @@ jobs:
 
       - name: Run Judge
         env:
-          RID: '${{ github.event.client_payload.rid }}'
-          LANG: '${{ github.event.client_payload.language }}'
-          CODE: '${{ github.event.client_payload.code }}'
-          TIME_LIMIT: '${{ github.event.client_payload.timeLimit }}'
-          MEMORY_LIMIT: '${{ github.event.client_payload.memoryLimit }}'
-          TEST_CASES: '${{ github.event.client_payload.testCases }}'
-          CALLBACK_URL: '${{ github.event.client_payload.callbackUrl }}'
+          RID: ${{ github.event.client_payload.rid }}
+          LANG: ${{ github.event.client_payload.language }}
+          CODE: "${{ github.event.client_payload.code }}"
+          TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
+          MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
+          # ✅ 关键修复：使用 toJson 和 fromJson 配合，并用双引号包裹
+          TEST_CASES: "${{ toJson(github.event.client_payload.testCases) }}"
+          CALLBACK_URL: "${{ github.event.client_payload.callbackUrl }}"
         run: |
           # 写入源代码
           case "$LANG" in
@@ -109,7 +110,7 @@ jobs:
 
           echo "$CODE" > "main.$EXT"
 
-          # 编译
+          # 编译（如果需要）
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
@@ -118,20 +119,19 @@ jobs:
             fi
           fi
 
-          # 解析测试用例
+          # ✅ 关键：从环境变量解析测试用例（这里 TEST_CASES 已经是 JSON 字符串）
           echo "$TEST_CASES" | jq -c '.[]' | while read -r test; do
             INPUT=$(echo "$test" | jq -r '.input')
             EXPECTED=$(echo "$test" | jq -r '.output')
-            
+
             START=$(date +%s%N)
             OUTPUT=$(echo "$INPUT" | timeout ${TIME_LIMIT:-2}s $RUN 2>&1 || echo "TLE_ERROR")
             END=$(date +%s%N)
             TIME_USED=$((($END - $START) / 1000000))
-            
-            # 清理输出
+
             OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-            
+
             if [[ "$OUTPUT" == "TLE_ERROR" ]]; then
               STATUS="time_limit_exceeded"
               break
