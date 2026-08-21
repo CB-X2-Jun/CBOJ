@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 题目列表</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>📚 题目列表</h1>
+    <table>
+      <thead><tr><th>题号</th><th>标题</th><th>难度</th><th>时间限制</th><th>内存限制</th></tr></thead>
+      <tbody id="problem-list"></tbody>
+    </table>
+  </div>
+  <script type="module">
+    import { getProblems, getUserInfo } from '/js/api.js';
+    // 导航栏
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>C</span>BOJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="logout(); location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+
+    const data = await getProblems();
+    const tbody = document.getElementById('problem-list');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无题目</td></tr>';
+    } else {
+      tbody.innerHTML = data.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td><a href="/problem.html?id=${p.id}">${p.title}</a></td>
+          <td>${p.difficulty || '未评级'}</td>
+          <td>${p.time_limit}ms</td>
+          <td>${p.memory_limit}MB</td>
+        </tr>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
