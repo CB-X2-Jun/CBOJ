@@ -10,7 +10,7 @@
   <div class="container">
     <h1>📚 题目列表</h1>
     <table>
-      <thead><tr><th>题号</th><th>标题</th><th>难度</th><th>时间限制</th><th>内存限制</th></tr></thead>
+      <thead><tr><th>题号</th><th>标题</th> <!--<th>难度</th> --><th>时间限制</th><th>内存限制</th></tr></thead>
       <tbody id="problem-list"></tbody>
     </table>
   </div>
@@ -44,7 +44,7 @@
         <tr>
           <td>${p.id}</td>
           <td><a href="/problem.html?id=${p.id}">${p.title}</a></td>
-          <td>${p.difficulty || '未评级'}</td>
+          <!-- <td>${p.difficulty || '未评级'}</td> -->
           <td>${p.time_limit}ms</td>
           <td>${p.memory_limit}MB</td>
         </tr>
