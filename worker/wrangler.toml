@@ -1,6 +1,6 @@
 name = "cboj-worker"
 main = "src/index.ts"          # 告诉系统入口文件在这里！
-compatibility_date = "$today"
+compatibility_date = "2026-08-21"
 
 [[d1_databases]]
 binding = "DB"                 # 绑定名必须和代码里的一致
