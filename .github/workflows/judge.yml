@@ -14,7 +14,7 @@ jobs:
 
       - name: Install Single Language
         env:
-          LANG: "${{ github.event.client_payload.language }}"
+          LANG: ${{ github.event.client_payload.language }}
         run: |
           sudo apt-get update
           case "$LANG" in
@@ -61,18 +61,18 @@ jobs:
 
       - name: Run Judge
         env:
-          RID: "${{ github.event.client_payload.rid }}"
-          LANG: "${{ github.event.client_payload.language }}"
-          CODE: "${{ github.event.client_payload.code }}"
-          TIME_LIMIT: "${{ github.event.client_payload.timeLimit }}"
-          MEMORY_LIMIT: "${{ github.event.client_payload.memoryLimit }}"
-          TEST_CASES: "${{ github.event.client_payload.testCases }}"
-          CALLBACK_URL: "${{ github.event.client_payload.callbackUrl }}"
+          RID: ${{ github.event.client_payload.rid }}
+          LANG: ${{ github.event.client_payload.language }}
+          # 使用单引号包裹，避免 YAML 解析器处理特殊字符
+          CODE: '${{ github.event.client_payload.code }}'
+          TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
+          MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
+          TEST_CASES: '${{ github.event.client_payload.testCases }}'
+          CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
-          # 写入源代码（从 JSON 字符串中解析）
+          # 转义后的代码需要还原
           CODE_RAW=$(echo "$CODE" | jq -r '.')
-          echo "$CODE_RAW" > "main.$EXT"
-          # 编译/运行 case
+          # 写入源代码
           case "$LANG" in
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN="./program" ;;
             "C++"*) EXT="cpp"; COMPILE="g++ -O2 main.cpp -o program"; RUN="./program" ;;
@@ -114,11 +114,14 @@ jobs:
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # 编译
+          echo "$CODE_RAW" > "main.$EXT"
+
+          # 编译（如果需要）
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
+              ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$(cat compile_error.log | head -c 500)\"}"
+                -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
               exit 0
             fi
           fi
@@ -151,6 +154,6 @@ jobs:
             fi
           done < /tmp/test_cases.txt
 
-          # 回传结果
+          # 回传结果（确保 STATUS 和 TOTAL_TIME 正确）
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
             -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":0}"
