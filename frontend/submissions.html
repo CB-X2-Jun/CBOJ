@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 评测记录</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar">...</nav>
+  <div class="container">
+    <h1>评测记录</h1>
+    <table id="submission-table">
+      <thead><tr><th>RID</th><th>用户</th><th>题目</th><th>语言</th><th>状态</th><th>耗时</th><th>内存</th><th>提交时间</th></tr></thead>
+      <tbody id="submission-body"></tbody>
+    </table>
+    <div id="pagination"></div>
+  </div>
+  <script type="module">
+    import { getSubmissions } from '/js/api.js';
+    const params = new URLSearchParams(window.location.search);
+    const page = parseInt(params.get('page')) || 1;
+    const limit = 50;
+    const offset = (page - 1) * limit;
+    
+    const data = await getSubmissions(limit, offset);
+    const tbody = document.getElementById('submission-body');
+    tbody.innerHTML = data.map(s => `
+      <tr>
+        <td><a href="/submission.html?rid=${s.rid}">${s.rid}</a></td>
+        <td>${s.username}</td>
+        <td><a href="/problem.html?id=${s.problem_id}">${s.problem_id}</a></td>
+        <td>${s.language}</td>
+        <td class="status-${s.status}">${s.status}</td>
+        <td>${s.time_used ?? '-'}ms</td>
+        <td>${s.memory_used ?? '-'}MB</td>
+        <td>${new Date(s.created_at).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  </script>
+</body>
+</html>
