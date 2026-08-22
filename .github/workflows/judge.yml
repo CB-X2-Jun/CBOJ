@@ -143,22 +143,46 @@ jobs:
             "Eiffel")
               echo "$CODE_RAW" > main.e
               cp default.ecf main.ecf
-              if ! ec -batch -config main.ecf -c_compile -finalize 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
+            
+              EC=$(find "$PWD" -type f -name "ec" | head -1)
+            
+              if [ -z "$EC" ]; then
+                  echo "Eiffel compiler not found"
+                  exit 1
               fi
-              if [ -f "EIFGENs/main/W_code/main" ]; then
-                RUN_CMD="./EIFGENs/main/W_code/main"
-              elif [ -f "EIFGENs/main/F_code/main" ]; then
-                RUN_CMD="./EIFGENs/main/F_code/main"
+            
+              chmod +x "$EC"
+            
+              if ! "$EC" -batch -config main.ecf -c_compile 2> compile_error.log; then
+                  ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                  curl -X POST "$CALLBACK_URL" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                  exit 0
+              fi
+            
+              FINISH=$(find "$PWD" -type f -name "finish_freezing" | head -1)
+            
+              if [ -n "$FINISH" ]; then
+                  chmod +x "$FINISH"
+                  "$FINISH"
+              fi
+            
+            
+              if [ -f "$PWD/EIFGENs/main/W_code/main" ]; then
+                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
+            
+              elif [ -f "$PWD/EIFGENs/main/F_code/main" ]; then
+                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
+            
               else
-                ERROR_MSG="Eiffel compilation succeeded but executable not found"
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
-                exit 0
+                  ERROR_MSG="Eiffel executable not found"
+                  curl -X POST "$CALLBACK_URL" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                  exit 0
               fi
+            
               SKIP_COMMON=1
               ;;
 
