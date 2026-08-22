@@ -69,18 +69,13 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 下载 master 分支最新源码包
               wget https://github.com/LibertyEiffel/Liberty/archive/master.tar.gz
               tar -xzf master.tar.gz
               cd Liberty-master
               export TERM=dumb
               chmod +x install.sh
-              # 步骤1: 引导编译（生成 se 等工具）
+              # 仅进行引导编译，不安装到系统
               ./install.sh -bootstrap
-              # 步骤2: 安装到 /usr/local（跳过交互）
-              export LE_USER=$(id -un)
-              export LE_GROUP=$(id -gn)
-              sudo env LE_USER=$LE_USER LE_GROUP=$LE_GROUP ./install.sh -local_install
               cd ..
               ;;
             "Ceylon")
@@ -170,10 +165,18 @@ jobs:
               ;;
 
             "Eiffel")
-              export PATH=/usr/local/bin:$PATH
+              export PATH=$(pwd)/Liberty-master/target/bin:$PATH
               echo "$CODE_RAW" > main.e
-              COMPILE="se compile -o program main.e"
-              RUN_CMD="./program"
+              if ! se compile -o program main.e 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              IFS=':' read total_time max_mem status <<< $(run_tests "./program")
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+              exit 0
               ;;
 
             "Ceylon")
