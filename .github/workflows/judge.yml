@@ -68,7 +68,7 @@ jobs:
             "Ceylon")
               # 1. 安装构建依赖
               sudo apt-get update
-              sudo apt-get install -y openjdk-11-jdk git ant unzip wget
+              sudo apt-get install -y openjdk-8-jdk git ant unzip wget
 
               # 2. 克隆 Ceylon 源代码（官方仓库）
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
