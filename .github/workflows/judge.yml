@@ -129,7 +129,7 @@ jobs:
             "Prolog") EXT="pl"; COMPILE=""; RUN="swipl -q -t main -s main.pl" ;;
             "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN="sbcl --script main.lisp" ;;
             "Tcl") EXT="tcl"; COMPILE=""; RUN="tclsh main.tcl" ;;
-            "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN="erl -noshell -s main main -s init stop" ;;
+            "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN="erl -noshell -s main start -s init stop" ;;
             "OCaml") EXT="ml"; COMPILE="ocamlopt -o program main.ml"; RUN="./program" ;;
             "Scala") EXT="scala"; COMPILE="scalac main.scala"; RUN="scala Main" ;;
             "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN="java -jar program.jar" ;;
@@ -137,7 +137,7 @@ jobs:
             "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN="./program" ;;
             "Dart") EXT="dart"; COMPILE="dart compile exe main.dart -o program"; RUN="./program" ;;
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
-            "TeX") EXT="tex"; COMPILE=""; RUN="tex main.tex" ;;
+            "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
