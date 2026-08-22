@@ -74,14 +74,14 @@ jobs:
 
               # 2. 克隆 Ceylon 构建仓库（ceylon-dist 会聚合所有子模块）
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
-              cd ceylon-dist
+              cd ceylon
 
               # 3. 构建（这一步大约需要 3-5 分钟）
               ant clean publish-all
 
               # 4. 构建好的 Ceylon 位于 target/dist 目录
               cd ..
-              sudo mv ceylon-dist/target/dist /opt/ceylon
+              sudo mv ceylon/target/dist /opt/ceylon
 
               # 5. 设置环境变量（对当前 shell 生效）
               export CEYLON_HOME=/opt/ceylon
