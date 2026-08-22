@@ -67,6 +67,24 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y liberty-eiffel-all
               ;;
+            "Ceylon")
+              # 安装 Java（Ceylon 需要 Java 8 或 11）
+              sudo apt-get install -y openjdk-11-jdk wget unzip
+              # 使用正确的下载链接并增加重试机制
+              wget --retry-connrefused --waitretry=1 --timeout=20 --tries=5 \
+                https://github.com/eclipse-archived/ceylon/archive/refs/tags/_old/1.3.3.zip
+              if [ -f "1.3.3.zip" ]; then
+                sudo unzip -q 1.3.3.zip -d /opt/
+                sudo mv /opt/ceylon-1.3.3 /opt/ceylon
+                echo "export CEYLON_HOME=/opt/ceylon" >> ~/.bashrc
+                echo "export PATH=\$PATH:\$CEYLON_HOME/bin" >> ~/.bashrc
+                export CEYLON_HOME=/opt/ceylon
+                export PATH=$PATH:$CEYLON_HOME/bin
+              else
+                echo "Warning: Ceylon download failed, skipping installation"
+                exit 1
+              fi
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -143,6 +161,16 @@ jobs:
             "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
+            "Ceylon")
+              # 创建模块描述文件
+              echo 'module cboj "1.0.0" {}' > module.ceylon
+              # 用户代码写入 main.ceylon
+              echo "$CODE_RAW" > main.ceylon
+              # 编译
+              ceylon compile cboj
+              # 运行
+              ceylon run cboj/1.0.0
+              ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
