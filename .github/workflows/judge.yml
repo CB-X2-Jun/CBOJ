@@ -40,14 +40,14 @@ jobs:
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
             "Julia")
               JULIA_VERSION="1.10.5"
-              JULIA_DIR="julia-${JULIA_VERSION}"
             
-              wget https://julialang-s3.julialang.org/bin/linux/x64/1.10/${JULIA_DIR}-linux-x86_64.tar.gz
+              wget https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-${JULIA_VERSION}-linux-x86_64.tar.gz
             
-              tar -xzf ${JULIA_DIR}-linux-x86_64.tar.gz -C /opt
+              tar -xzf julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C /opt
             
-              sudo ln -sf /opt/${JULIA_DIR}/bin/julia /usr/local/bin/julia
+              sudo ln -sf /opt/julia-${JULIA_VERSION}/bin/julia /usr/local/bin/julia
             
+              julia --version
               ;;
             "Dart")
               sudo sh -c 'echo "deb [trusted=yes] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main" > /etc/apt/sources.list.d/dart_stable.list'
