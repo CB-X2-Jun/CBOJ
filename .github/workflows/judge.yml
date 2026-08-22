@@ -67,25 +67,25 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 使用官方预编译 EiffelStudio 25.12 (x86-64)
               EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
+
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
               tar -xjf ${EIFFEL_DIR}.tar.bz2
-              # 设置完整的 Eiffel 环境变量
+
               echo "ISE_EIFFEL=$PWD/${EIFFEL_DIR}" >> $GITHUB_ENV
               echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
               echo "ISE_LIBRARY=$PWD/${EIFFEL_DIR}/library" >> $GITHUB_ENV
               echo "$PWD/${EIFFEL_DIR}/bin" >> $GITHUB_PATH
-              # 生成简化的 ECF 配置文件（无 file_rule，避免排除源文件）
-              cat > default.ecf <<'EOF'
-              <?xml version="1.0" encoding="UTF-8"?>
-              <system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-1ca4-aaa9-11445b789abc">
-                <target name="main">
-                  <root class="MAIN" feature="make"/>
-                  <cluster name="main" location="."/>
-                </target>
-              </system>
-              EOF
+
+              printf '%s\n' \
+              '<?xml version="1.0" encoding="UTF-8"?>' \
+              '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
+              '  <target name="main">' \
+              '    <root class="MAIN" feature="make"/>' \
+              '    <cluster name="main" location="."/>' \
+              '  </target>' \
+              '</system>' \
+              > default.ecf
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
