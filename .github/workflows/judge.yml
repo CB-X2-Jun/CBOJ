@@ -37,7 +37,11 @@ jobs:
             "Lua") sudo apt-get install -y lua5.4 ;;
             "Perl") sudo apt-get install -y perl ;;
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
-            "Julia") sudo apt-get install -y julia ;;
+            "Julia")
+              # 手动安装 Julia 1.10.5
+              wget -qO- https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | sudo tar xz -C /opt
+              sudo ln -s /opt/julia-1.10.5/bin/julia /usr/local/bin/julia
+              ;;
             "Dart")
               sudo sh -c 'echo "deb [trusted=yes] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main" > /etc/apt/sources.list.d/dart_stable.list'
               sudo apt-get update
@@ -63,12 +67,15 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              echo "deb [trusted=yes] http://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
-              sudo apt-get update
-              sudo apt-get install -y liberty-eiffel-all
+              # 从源码编译 Liberty Eiffel（官方安装脚本）
+              git clone --depth 1 https://github.com/LibertyEiffel/Liberty.git
+              cd Liberty
+              chmod +x install.sh
+              ./install.sh
+              echo "$(pwd)/target/bin" >> $GITHUB_PATH
+              cd ..
               ;;
             "Ceylon")
-              # 安装 JDK 8 和 ant
               sudo apt-get install -y openjdk-8-jdk ant
               export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
               export PATH=$JAVA_HOME/bin:$PATH
@@ -95,12 +102,106 @@ jobs:
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           CODE_RAW=$(echo "$CODE" | jq -r '.')
-          # 将毫秒转为秒（支持小数）
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
-          # 内存限制转 KB（ulimit 单位是 KB）
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
+          # 定义通用测试循环函数（供需要自包含的语言直接调用）
+          run_tests() {
+            local run_cmd="$1"
+            local total_time=0
+            local max_mem=0
+            local status="accepted"
+            echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+            while read -r test; do
+              INPUT=$(echo "$test" | jq -r '.input')
+              EXPECTED=$(echo "$test" | jq -r '.output')
+              OUT_FILE=$(mktemp)
+              MEM_FILE=$(mktemp)
+              START=$(date +%s%N)
+              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
+              EXIT_CODE=$?
+              END=$(date +%s%N)
+              TIME_USED=$((($END - $START) / 1000000))
+              total_time=$((total_time + TIME_USED))
+              MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+              [ -z "$MEM_USED" ] && MEM_USED=0
+              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
+              OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+              EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+              rm -f "$OUT_FILE" "$MEM_FILE"
+
+              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+                if echo "$OUTPUT" | grep -q "Killed"; then
+                  status="memory_limit_exceeded"
+                else
+                  status="time_limit_exceeded"
+                fi
+                break
+              elif [ $EXIT_CODE -ne 0 ]; then
+                status="runtime_error"
+                break
+              elif [ "$OUTPUT" != "$EXPECTED" ]; then
+                status="wrong_answer"
+                break
+              fi
+            done < /tmp/test_cases.txt
+            echo "$total_time $max_mem $status"
+          }
+
           case "$LANG" in
+            # ----- Java 系列（自包含，避免外部覆盖） -----
+            "Java8"|"Java11"|"Java17"|"Java21")
+              echo "$CODE_RAW" > Main.java
+              if ! javac Main.java 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              # 运行测试
+              read total_time max_mem status <<< $(run_tests "java Main")
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+              exit 0
+              ;;
+
+            # ----- Eiffel（自包含） -----
+            "Eiffel")
+              export PATH=/home/runner/work/CBOJ/CBOJ/Liberty/target/bin:$PATH
+              echo "$CODE_RAW" > main.e
+              if ! se compile -o program main.e 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              read total_time max_mem status <<< $(run_tests "./program")
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+              exit 0
+              ;;
+
+            # ----- Ceylon（自包含） -----
+            "Ceylon")
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+              export CEYLON_HOME=/opt/ceylon
+              export PATH=$JAVA_HOME/bin:$CEYLON_HOME/bin:$PATH
+              mkdir -p source/cboj
+              echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
+              echo "$CODE_RAW" > source/cboj/run.ceylon
+              if ! ceylon compile --source source cboj 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+              exit 0
+              ;;
+
+            # ----- 其他语言（通用流程） -----
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN="./program" ;;
@@ -114,30 +215,6 @@ jobs:
             "Python3") EXT="py"; COMPILE=""; RUN="python3 main.py" ;;
             "PyPy2") EXT="py"; COMPILE=""; RUN="pypy main.py" ;;
             "PyPy3") EXT="py"; COMPILE=""; RUN="pypy3 main.py" ;;
-            "Java8")
-              EXT="java"
-              echo "$CODE_RAW" > "Main.$EXT"
-              COMPILE="javac Main.java"
-              RUN="java Main"
-              ;;
-            "Java11")
-              EXT="java"
-              echo "$CODE_RAW" > "Main.$EXT"
-              COMPILE="javac Main.java"
-              RUN="java Main"
-              ;;
-            "Java17")
-              EXT="java"
-              echo "$CODE_RAW" > "Main.$EXT"
-              COMPILE="javac Main.java"
-              RUN="java Main"
-              ;;
-            "Java21")
-              EXT="java"
-              echo "$CODE_RAW" > "Main.$EXT"
-              COMPILE="javac Main.java"
-              RUN="java Main"
-              ;;
             "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN="./program" ;;
             "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN="./program" ;;
             "Ruby") EXT="rb"; COMPILE=""; RUN="ruby main.rb" ;;
@@ -170,49 +247,11 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
-            "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
-            "Ceylon")
-              # Ceylon 特殊处理
-              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-              export CEYLON_HOME=/opt/ceylon
-              export PATH=$JAVA_HOME/bin:$CEYLON_HOME/bin:$PATH
-              mkdir -p source/cboj
-              echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
-              echo "$CODE_RAW" > source/cboj/run.ceylon
-              if ! ceylon compile --source source cboj 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              # 运行并捕获输出
-              OUTPUT=$(timeout ${TIMEOUT_SEC}s ceylon run cboj/1.0.0 2>&1)
-              EXIT_CODE=$?
-              # 处理超时、运行时错误
-              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-                STATUS="time_limit_exceeded"
-              elif [ $EXIT_CODE -ne 0 ]; then
-                STATUS="runtime_error"
-              else
-                OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
-                EXPECTED=$(echo "$TEST_CASES" | jq -r '.[0].output' | sed -e 's/[[:space:]]*$//')
-                if [ "$OUTPUT" != "$EXPECTED" ]; then
-                  STATUS="wrong_answer"
-                else
-                  STATUS="accepted"
-                fi
-              fi
-              # 回传结果
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":0,\"memory_used\":0}"
-              exit 0
-              ;;
+            *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # 对于其他语言，写入源文件
+          # ---------- 通用流程执行 ----------
           echo "$CODE_RAW" > "main.$EXT"
-
-          # 编译
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
               ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -222,46 +261,6 @@ jobs:
             fi
           fi
 
-          # 初始化变量
-          TOTAL_TIME=0
-          STATUS="accepted"
-
-          # 将测试点写入临时文件
-          echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-          while read -r test; do
-            INPUT=$(echo "$test" | jq -r '.input')
-            EXPECTED=$(echo "$test" | jq -r '.output')
-
-            START=$(date +%s%N)
-            # ✅ 关键修改：在子 shell 中单独设置内存限制
-            OUTPUT=$( (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | timeout ${TIMEOUT_SEC}s $RUN 2>&1) )
-            EXIT_CODE=$?
-            END=$(date +%s%N)
-            TIME_USED=$((($END - $START) / 1000000))
-            TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
-
-            OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
-            EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-
-            # 判断结果
-            if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-              # 124 = timeout 超时，137 = 被 SIGKILL（可能是内存超限或超时后 kill）
-              # 进一步区分：如果输出中包含 "Killed" 则可能是内存超限
-              if echo "$OUTPUT" | grep -q "Killed"; then
-                STATUS="memory_limit_exceeded"
-              else
-                STATUS="time_limit_exceeded"
-              fi
-              break
-            elif [ $EXIT_CODE -ne 0 ]; then
-              STATUS="runtime_error"
-              break
-            elif [ "$OUTPUT" != "$EXPECTED" ]; then
-              STATUS="wrong_answer"
-              break
-            fi
-          done < /tmp/test_cases.txt
-
-          # 回传结果
+          read total_time max_mem status <<< $(run_tests "$RUN")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":0}"
+            -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
