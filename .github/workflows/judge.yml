@@ -162,19 +162,18 @@ jobs:
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
             "Ceylon")
-              # 重新设置环境变量
+              # 强制使用 Java 8
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
               export CEYLON_HOME=/opt/ceylon
-              export PATH=$CEYLON_HOME/bin:$PATH
+              export PATH=$JAVA_HOME/bin:$CEYLON_HOME/bin:$PATH
             
-              # 创建标准的模块目录结构（源根为当前目录下的 source/）
+              # 创建模块
               mkdir -p source/cboj
               echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
-              echo "$CODE_RAW" > source/cboj/run.ceylon   # 用户代码必须包含 shared void run()
+              echo "$CODE_RAW" > source/cboj/run.ceylon
             
-              # 编译模块（-source 指定源根，编译模块 cboj）
+              # 编译与运行
               ceylon compile --source source cboj
-            
-              # 运行模块
               ceylon run cboj/1.0.0
               ;;
           esac
