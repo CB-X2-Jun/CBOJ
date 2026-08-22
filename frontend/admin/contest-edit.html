@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CBOJ - 管理比赛</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container" style="max-width: 800px;">
+    <h1 id="form-title">创建比赛</h1>
+    <form id="contest-form">
+      <div class="form-group">
+        <label>标题</label>
+        <input type="text" id="title" required>
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <textarea id="description" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>开始时间</label>
+        <input type="datetime-local" id="start_time" required>
+      </div>
+      <div class="form-group">
+        <label>结束时间</label>
+        <input type="datetime-local" id="end_time" required>
+      </div>
+      <div class="form-group">
+        <label>题目列表（JSON 数组，例如 ["C1000", "C1001"]）</label>
+        <input type="text" id="problems" value='["C1000"]' required>
+      </div>
+      <button type="submit" class="btn btn-success">保存</button>
+      <a href="/contests.html" class="btn" style="background: #6c757d; margin-left: 0.5rem;">返回列表</a>
+    </form>
+    <div id="error" style="color:red; margin-top:1rem;"></div>
+  </div>
+  <script type="module">
+    import { getContest, createContest, updateContest, getUserInfo } from '/js/api.js';
+
+    // 先获取用户，检查权限
+    const user = getUserInfo();
+    if (!user || !user.isAdmin) {
+      location.href = '/index.html';
+    }
+
+    // 渲染导航栏
+    const nav = document.getElementById('navbar');
+    nav.innerHTML = `
+      <div class="logo"><span>C</span>BOJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        <a href="/admin/problems.html" style="color: #f0b400;">管理</a>
+      </div>
+      <div class="right">
+        <span class="user">👤 ${user.username}</span>
+        <button onclick="localStorage.removeItem('token'); window.location.href='/index.html'">退出</button>
+      </div>
+    `;
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const isEdit = !!id;
+
+    if (isEdit) {
+      document.getElementById('form-title').textContent = '编辑比赛';
+      const contest = await getContest(id);
+      document.getElementById('title').value = contest.title;
+      document.getElementById('description').value = contest.description || '';
+      document.getElementById('start_time').value = contest.start_time.slice(0, 16);
+      document.getElementById('end_time').value = contest.end_time.slice(0, 16);
+      document.getElementById('problems').value = contest.problems;
+    }
+
+    document.getElementById('contest-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const start_time = document.getElementById('start_time').value;
+      const end_time = document.getElementById('end_time').value;
+      let problems;
+      try {
+        problems = JSON.parse(document.getElementById('problems').value);
+        if (!Array.isArray(problems) || problems.length === 0) throw new Error('题目列表必须是非空数组');
+      } catch (err) {
+        document.getElementById('error').textContent = '题目列表 JSON 格式错误：' + err.message;
+        return;
+      }
+      if (!title || !start_time || !end_time) {
+        document.getElementById('error').textContent = '请填写完整信息';
+        return;
+      }
+      const data = { title, description, start_time, end_time, problems };
+      try {
+        if (isEdit) {
+          await updateContest(id, data);
+        } else {
+          await createContest(data);
+        }
+        location.href = '/contests.html';
+      } catch (err) {
+        document.getElementById('error').textContent = '保存失败：' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
