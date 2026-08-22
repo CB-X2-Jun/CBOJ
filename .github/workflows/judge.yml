@@ -21,9 +21,12 @@ jobs:
             "C") sudo apt-get install -y gcc ;;
             "C++98"|"C++03"|"C++11"|"C++14"|"C++17"|"C++20"|"C++23"|"C++26")
               sudo apt-get install -y g++ ;;
-            "Python2") sudo apt-get install -y python2 ;;
+            "Python2")
+              sudo apt-get install -y python2.7
+              sudo ln -sf /usr/bin/python2.7 /usr/local/bin/python2
+              ;;
             "Python3") sudo apt-get install -y python3 ;;
-            "PyPy2") sudo apt-get install -y pypy ;;
+            "PyPy2") sudo apt-get install -y pypy || sudo apt-get install -y pypy2 ;;
             "PyPy3") sudo apt-get install -y pypy3 ;;
             "Java8") sudo apt-get install -y openjdk-8-jdk ;;
             "Java11") sudo apt-get install -y openjdk-11-jdk ;;
@@ -66,9 +69,13 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 使用预编译二进制包，避免编译交互
-              wget -qO- https://github.com/LibertyEiffel/Liberty/releases/download/2016.05/liberty-eiffel-2016.05-linux-x86_64.tar.gz | sudo tar xz -C /opt
-              sudo ln -s /opt/liberty-eiffel-2016.05/bin/se /usr/local/bin/se
+              wget --no-check-certificate http://download.savannah.gnu.org/releases/liberty-eiffel/bell.tar.gz
+              tar -xzf bell.tar.gz
+              cd bell-*/ || cd Liberty-*/
+              export TERM=dumb
+              chmod +x install.sh
+              sudo ./install.sh --prefix=/usr/local
+              cd ..
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
@@ -97,59 +104,73 @@ jobs:
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           CODE_RAW=$(echo "$CODE" | jq -r '.')
-          # 将毫秒转为秒（支持小数）
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
-          # 内存限制转 KB（ulimit 单位是 KB）
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
+          # ---------- 通用测试循环（所有语言统一使用） ----------
+          run_tests() {
+            local run_cmd="$1"
+            local total_time=0
+            local max_mem=0
+            local status="accepted"
+            echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+            while read -r test; do
+              INPUT=$(echo "$test" | jq -r '.input')
+              EXPECTED=$(echo "$test" | jq -r '.output')
+              OUT_FILE=$(mktemp)
+              MEM_FILE=$(mktemp)
+              START=$(date +%s%N)
+              # 在子 shell 中设置内存限制并运行
+              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
+              EXIT_CODE=$?
+              END=$(date +%s%N)
+              TIME_USED=$((($END - $START) / 1000000))
+              total_time=$((total_time + TIME_USED))
+              MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+              [ -z "$MEM_USED" ] && MEM_USED=0
+              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
+              OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+              EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+              rm -f "$OUT_FILE" "$MEM_FILE"
+
+              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+                if echo "$OUTPUT" | grep -q "Killed"; then
+                  status="memory_limit_exceeded"
+                else
+                  status="time_limit_exceeded"
+                fi
+                break
+              elif [ $EXIT_CODE -ne 0 ]; then
+                status="runtime_error"
+                break
+              elif [ "$OUTPUT" != "$EXPECTED" ]; then
+                status="wrong_answer"
+                break
+              fi
+            done < /tmp/test_cases.txt
+            # 将内存从 KB 转换为 MB（保留两位小数）
+            MEM_MB=$(python3 -c "print(round($max_mem/1024, 2))")
+            echo "$total_time $MEM_MB $status"
+          }
+
+          # ---------- 设置语言特定的编译/运行参数 ----------
           case "$LANG" in
-            # ----- Java 系列（自包含，避免被外部覆盖） -----
+            # Java 系列：必须写 Main.java
             "Java8"|"Java11"|"Java17"|"Java21")
               echo "$CODE_RAW" > Main.java
-              if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              TOTAL_TIME=0
-              MAX_MEM=0
-              STATUS="accepted"
-              echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-              while read -r test; do
-                INPUT=$(echo "$test" | jq -r '.input')
-                EXPECTED=$(echo "$test" | jq -r '.output')
-                OUT_FILE=$(mktemp)
-                MEM_FILE=$(mktemp)
-                START=$(date +%s%N)
-                (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s java Main > "$OUT_FILE") 2>/dev/null
-                EXIT_CODE=$?
-                END=$(date +%s%N)
-                TIME_USED=$((($END - $START) / 1000000))
-                TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
-                MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-                [ -z "$MEM_USED" ] && MEM_USED=0
-                [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
-                OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
-                EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-                rm -f "$OUT_FILE" "$MEM_FILE"
-
-                if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-                  STATUS="time_limit_exceeded"; break
-                elif [ $EXIT_CODE -ne 0 ]; then
-                  STATUS="runtime_error"; break
-                elif [ "$OUTPUT" != "$EXPECTED" ]; then
-                  STATUS="wrong_answer"; break
-                fi
-              done < /tmp/test_cases.txt
-              # 内存从 KB 转为 MB（保留两位小数）
-              MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
-              exit 0
+              COMPILE="javac Main.java"
+              RUN_CMD="java Main"
               ;;
 
-            # ----- Ceylon（自包含） -----
+            # Eiffel
+            "Eiffel")
+              export PATH=/usr/local/bin:$PATH
+              echo "$CODE_RAW" > main.e
+              COMPILE="se compile -o program main.e"
+              RUN_CMD="./program"
+              ;;
+
+            # Ceylon 特殊处理（模块结构）
             "Ceylon")
               export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
               export CEYLON_HOME=/opt/ceylon
@@ -163,120 +184,80 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              # 运行并捕获输出
-              OUTPUT=$(timeout ${TIMEOUT_SEC}s ceylon run cboj/1.0.0 2>&1)
-              EXIT_CODE=$?
-              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-                STATUS="time_limit_exceeded"
-              elif [ $EXIT_CODE -ne 0 ]; then
-                STATUS="runtime_error"
-              else
-                OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
-                EXPECTED=$(echo "$TEST_CASES" | jq -r '.[0].output' | sed -e 's/[[:space:]]*$//')
-                [ "$OUTPUT" != "$EXPECTED" ] && STATUS="wrong_answer" || STATUS="accepted"
-              fi
-              # 内存暂不统计，设为 0
+              # Ceylon 直接调用 run_tests，使用 ceylon run 命令
+              read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":0,\"memory_used\":0}"
+                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
               exit 0
               ;;
 
-            # ----- Eiffel（自包含） -----
-            "Eiffel")
-              export PATH=/opt/liberty-eiffel-2016.05/bin:$PATH
-              echo "$CODE_RAW" > main.e
-              if ! se compile -o program main.e 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              TOTAL_TIME=0
-              MAX_MEM=0
-              STATUS="accepted"
-              echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-              while read -r test; do
-                INPUT=$(echo "$test" | jq -r '.input')
-                EXPECTED=$(echo "$test" | jq -r '.output')
-                OUT_FILE=$(mktemp)
-                MEM_FILE=$(mktemp)
-                START=$(date +%s%N)
-                (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s ./program > "$OUT_FILE") 2>/dev/null
-                EXIT_CODE=$?
-                END=$(date +%s%N)
-                TIME_USED=$((($END - $START) / 1000000))
-                TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
-                MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-                [ -z "$MEM_USED" ] && MEM_USED=0
-                [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
-                OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
-                EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-                rm -f "$OUT_FILE" "$MEM_FILE"
-
-                if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-                  STATUS="time_limit_exceeded"; break
-                elif [ $EXIT_CODE -ne 0 ]; then
-                  STATUS="runtime_error"; break
-                elif [ "$OUTPUT" != "$EXPECTED" ]; then
-                  STATUS="wrong_answer"; break
-                fi
-              done < /tmp/test_cases.txt
-              MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
-              exit 0
-              ;;
-
-            # ----- 其他语言（通用流程） -----
-            "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN="./program" ;;
-            "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++11") EXT="cpp"; COMPILE="g++ -std=c++11 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++14") EXT="cpp"; COMPILE="g++ -std=c++14 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++17") EXT="cpp"; COMPILE="g++ -std=c++17 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++20") EXT="cpp"; COMPILE="g++ -std=c++20 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++23") EXT="cpp"; COMPILE="g++ -std=c++23 -O2 main.cpp -o program"; RUN="./program" ;;
-            "C++26") EXT="cpp"; COMPILE="g++ -std=c++26 -O2 main.cpp -o program"; RUN="./program" ;;
-            "Python2") EXT="py"; COMPILE=""; RUN="python2 main.py" ;;
-            "Python3") EXT="py"; COMPILE=""; RUN="python3 main.py" ;;
-            "PyPy2") EXT="py"; COMPILE=""; RUN="pypy main.py" ;;
-            "PyPy3") EXT="py"; COMPILE=""; RUN="pypy3 main.py" ;;
-            "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN="./program" ;;
-            "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN="./program" ;;
-            "Ruby") EXT="rb"; COMPILE=""; RUN="ruby main.rb" ;;
-            "PHP") EXT="php"; COMPILE=""; RUN="php main.php" ;;
-            "Javascript") EXT="js"; COMPILE=""; RUN="node main.js" ;;
-            "Typescript") EXT="ts"; COMPILE="tsc main.ts"; RUN="node main.js" ;;
-            "C#") EXT="cs"; COMPILE="mcs main.cs"; RUN="mono main.exe" ;;
-            "F#") EXT="fs"; COMPILE="fsharpc main.fs"; RUN="mono main.exe" ;;
-            "D") EXT="d"; COMPILE="gdc -O2 main.d -o program"; RUN="./program" ;;
-            "Lua") EXT="lua"; COMPILE=""; RUN="lua main.lua" ;;
-            "Perl") EXT="pl"; COMPILE=""; RUN="perl main.pl" ;;
-            "Haskell") EXT="hs"; COMPILE="ghc -O2 main.hs -o program"; RUN="./program" ;;
-            "Julia") EXT="jl"; COMPILE=""; RUN="julia main.jl" ;;
-            "Swift") EXT="swift"; COMPILE="swiftc -O main.swift -o program"; RUN="./program" ;;
-            "Bash") EXT="sh"; COMPILE=""; RUN="bash main.sh" ;;
-            "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN="./program" ;;
-            "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN="./program" ;;
-            "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN="./program" ;;
-            "BASIC") EXT="bas"; COMPILE=""; RUN="bwbasic main.bas" ;;
-            "Prolog") EXT="pl"; COMPILE=""; RUN="swipl -q -t main -s main.pl" ;;
-            "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN="sbcl --script main.lisp" ;;
-            "Tcl") EXT="tcl"; COMPILE=""; RUN="tclsh main.tcl" ;;
-            "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN="erl -noshell -s main start -s init stop" ;;
-            "OCaml") EXT="ml"; COMPILE="ocamlopt -o program main.ml"; RUN="./program" ;;
-            "Scala") EXT="scala"; COMPILE="scalac main.scala"; RUN="scala Main" ;;
-            "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN="java -jar program.jar" ;;
-            "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN="./program" ;;
-            "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN="./program" ;;
-            "Dart") EXT="dart"; COMPILE=""; RUN="dart run main.dart" ;;
-            "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
-            "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
-            "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
+            # 其他语言：使用通用文件名 main.$EXT
+            "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
+            "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++11") EXT="cpp"; COMPILE="g++ -std=c++11 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++14") EXT="cpp"; COMPILE="g++ -std=c++14 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++17") EXT="cpp"; COMPILE="g++ -std=c++17 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++20") EXT="cpp"; COMPILE="g++ -std=c++20 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++23") EXT="cpp"; COMPILE="g++ -std=c++23 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "C++26") EXT="cpp"; COMPILE="g++ -std=c++26 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
+            "Python2") EXT="py"; COMPILE=""; RUN_CMD="python2 main.py" ;;
+            "Python3") EXT="py"; COMPILE=""; RUN_CMD="python3 main.py" ;;
+            "PyPy2") EXT="py"; COMPILE=""; RUN_CMD="pypy main.py" ;;
+            "PyPy3") EXT="py"; COMPILE=""; RUN_CMD="pypy3 main.py" ;;
+            "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN_CMD="./program" ;;
+            "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN_CMD="./program" ;;
+            "Ruby") EXT="rb"; COMPILE=""; RUN_CMD="ruby main.rb" ;;
+            "PHP") EXT="php"; COMPILE=""; RUN_CMD="php main.php" ;;
+            "Javascript") EXT="js"; COMPILE=""; RUN_CMD="node main.js" ;;
+            "Typescript") EXT="ts"; COMPILE="tsc main.ts"; RUN_CMD="node main.js" ;;
+            "C#") EXT="cs"; COMPILE="mcs main.cs"; RUN_CMD="mono main.exe" ;;
+            "F#") EXT="fs"; COMPILE="fsharpc main.fs"; RUN_CMD="mono main.exe" ;;
+            "D") EXT="d"; COMPILE="gdc -O2 main.d -o program"; RUN_CMD="./program" ;;
+            "Lua") EXT="lua"; COMPILE=""; RUN_CMD="lua main.lua" ;;
+            "Perl") EXT="pl"; COMPILE=""; RUN_CMD="perl main.pl" ;;
+            "Haskell") EXT="hs"; COMPILE="ghc -O2 main.hs -o program"; RUN_CMD="./program" ;;
+            "Julia") EXT="jl"; COMPILE=""; RUN_CMD="julia main.jl" ;;
+            "Swift") EXT="swift"; COMPILE="swiftc -O main.swift -o program"; RUN_CMD="./program" ;;
+            "Bash") EXT="sh"; COMPILE=""; RUN_CMD="bash main.sh" ;;
+            "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
+            "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN_CMD="./program" ;;
+            "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
+            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="bwbasic main.bas" ;;
+            "Prolog") EXT="pl"; COMPILE=""; RUN_CMD="swipl -q -t main -s main.pl" ;;
+            "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN_CMD="sbcl --script main.lisp" ;;
+            "Tcl") EXT="tcl"; COMPILE=""; RUN_CMD="tclsh main.tcl" ;;
+            "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN_CMD="erl -noshell -s main start -s init stop" ;;
+            "OCaml") EXT="ml"; COMPILE="ocamlopt -o program main.ml"; RUN_CMD="./program" ;;
+            "Scala") EXT="scala"; COMPILE="scalac main.scala"; RUN_CMD="scala Main" ;;
+            "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN_CMD="java -jar program.jar" ;;
+            "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN_CMD="./program" ;;
+            "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN_CMD="./program" ;;
+            "Dart") EXT="dart"; COMPILE=""; RUN_CMD="dart run main.dart" ;;
+            "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
+            "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex -interaction=batchmode main.tex" ;;
+            "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # ---------- 通用流程执行 ----------
+          # ---------- 对于 Java 和 Eiffel，它们已在 case 中设置了 COMPILE 和 RUN_CMD，但未写通用文件 ----------
+          # 先处理 Java 和 Eiffel 的编译（它们在 case 中已经写好源文件）
+          if [ "$LANG" = "Java8" ] || [ "$LANG" = "Java11" ] || [ "$LANG" = "Java17" ] || [ "$LANG" = "Java21" ] || [ "$LANG" = "Eiffel" ]; then
+            # 编译（已由 case 中的 COMPILE 变量指定）
+            if ! $COMPILE 2> compile_error.log; then
+              ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+              exit 0
+            fi
+            # 运行测试
+            read total_time max_mem status <<< $(run_tests "$RUN_CMD")
+            curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+              -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+            exit 0
+          fi
+
+          # ---------- 其他语言走通用流程 ----------
           echo "$CODE_RAW" > "main.$EXT"
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
@@ -287,42 +268,6 @@ jobs:
             fi
           fi
 
-          TOTAL_TIME=0
-          MAX_MEM=0
-          STATUS="accepted"
-          echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-          while read -r test; do
-            INPUT=$(echo "$test" | jq -r '.input')
-            EXPECTED=$(echo "$test" | jq -r '.output')
-            OUT_FILE=$(mktemp)
-            MEM_FILE=$(mktemp)
-            START=$(date +%s%N)
-            (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $RUN > "$OUT_FILE") 2>/dev/null
-            EXIT_CODE=$?
-            END=$(date +%s%N)
-            TIME_USED=$((($END - $START) / 1000000))
-            TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
-            MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-            [ -z "$MEM_USED" ] && MEM_USED=0
-            [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
-            OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
-            EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-            rm -f "$OUT_FILE" "$MEM_FILE"
-
-            if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-              if echo "$OUTPUT" | grep -q "Killed"; then
-                STATUS="memory_limit_exceeded"
-              else
-                STATUS="time_limit_exceeded"
-              fi
-              break
-            elif [ $EXIT_CODE -ne 0 ]; then
-              STATUS="runtime_error"; break
-            elif [ "$OUTPUT" != "$EXPECTED" ]; then
-              STATUS="wrong_answer"; break
-            fi
-          done < /tmp/test_cases.txt
-
-          MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
+          read total_time max_mem status <<< $(run_tests "$RUN_CMD")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
+            -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
