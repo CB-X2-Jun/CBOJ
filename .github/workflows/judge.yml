@@ -37,7 +37,6 @@ jobs:
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
             "Julia") sudo apt-get install -y julia ;;
             "Dart")
-              # 添加 Dart 官方源（绕过 GPG 验证）
               sudo sh -c 'echo "deb [trusted=yes] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main" > /etc/apt/sources.list.d/dart_stable.list'
               sudo apt-get update
               sudo apt-get install -y dart
@@ -62,7 +61,6 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 使用 trusted=yes 绕过签名问题
               echo "deb [trusted=yes] http://apt.liberty-eiffel.org/ release main" | sudo tee /etc/apt/sources.list.d/liberty-eiffel.list
               sudo apt-get update
               sudo apt-get install -y liberty-eiffel-all
@@ -72,16 +70,16 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y openjdk-11-jdk git ant unzip wget
 
-              # 2. 克隆 Ceylon 构建仓库（ceylon-dist 会聚合所有子模块）
+              # 2. 克隆 Ceylon 源代码（官方仓库）
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
               cd ceylon
 
-              # 3. 构建（这一步大约需要 3-5 分钟）
-              ant clean publish-all
+              # 3. 构建（修改点1：目标改为 dist，并先执行 clean）
+              ant clean dist
 
-              # 4. 构建好的 Ceylon 位于 target/dist 目录
+              # 4. 构建好的发行版位于 ceylon/dist 目录（修改点2：路径修正）
               cd ..
-              sudo mv ceylon/target/dist /opt/ceylon
+              sudo mv ceylon/dist /opt/ceylon
 
               # 5. 设置环境变量（对当前 shell 生效）
               export CEYLON_HOME=/opt/ceylon
@@ -104,9 +102,7 @@ jobs:
           TEST_CASES: '${{ github.event.client_payload.testCases }}'
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
-          # 转义后的代码需要还原
           CODE_RAW=$(echo "$CODE" | jq -r '.')
-          # 写入源代码
           case "$LANG" in
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN="./program" ;;
@@ -167,26 +163,20 @@ jobs:
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
             "Ceylon")
-              # 重新设置环境变量（因为新 shell 会丢失）
+              # 重新设置环境变量（因为新 shell 可能丢失）
               export CEYLON_HOME=/opt/ceylon
               export PATH=$CEYLON_HOME/bin:$PATH
 
-              # 创建模块描述文件
               echo 'module cboj "1.0.0" {}' > module.ceylon
-              # 用户代码写入 source.ceylon
               echo "$CODE_RAW" > source.ceylon
 
-              # 编译
               ceylon compile cboj
-
-              # 运行
               ceylon run cboj/1.0.0
               ;;
           esac
 
           echo "$CODE_RAW" > "main.$EXT"
 
-          # 编译（如果需要）
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
               ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -196,11 +186,9 @@ jobs:
             fi
           fi
 
-          # 初始化变量
           TOTAL_TIME=0
           STATUS="accepted"
 
-          # 将测试用例写入临时文件，避免子 Shell 变量丢失
           echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
           while read -r test; do
             INPUT=$(echo "$test" | jq -r '.input')
@@ -224,6 +212,5 @@ jobs:
             fi
           done < /tmp/test_cases.txt
 
-          # 回传结果
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
             -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":0}"
