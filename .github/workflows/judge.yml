@@ -73,7 +73,7 @@ jobs:
               sudo apt-get install -y openjdk-11-jdk git ant unzip wget
 
               # 2. 克隆 Ceylon 构建仓库（ceylon-dist 会聚合所有子模块）
-              git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon-dist.git
+              git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
               cd ceylon-dist
 
               # 3. 构建（这一步大约需要 3-5 分钟）
