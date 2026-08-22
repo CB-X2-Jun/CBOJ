@@ -70,18 +70,27 @@ jobs:
             "Ceylon")
               # 安装 Java（Ceylon 需要 Java 8 或 11）
               sudo apt-get install -y openjdk-11-jdk wget unzip
-              # 使用正确的下载链接并增加重试机制
+              # 下载 Ceylon 1.3.3
               wget --retry-connrefused --waitretry=1 --timeout=20 --tries=5 \
                 https://github.com/eclipse-archived/ceylon/archive/refs/tags/_old/1.3.3.zip
               if [ -f "1.3.3.zip" ]; then
+                # 解压到 /opt
                 sudo unzip -q 1.3.3.zip -d /opt/
-                sudo mv /opt/ceylon-1.3.3 /opt/ceylon
-                echo "export CEYLON_HOME=/opt/ceylon" >> ~/.bashrc
-                echo "export PATH=\$PATH:\$CEYLON_HOME/bin" >> ~/.bashrc
-                export CEYLON_HOME=/opt/ceylon
-                export PATH=$PATH:$CEYLON_HOME/bin
+                # 找出实际解压出的目录（以 ceylon- 开头）
+                EXTRACTED_DIR=$(sudo find /opt -maxdepth 1 -type d -name "ceylon-*" | head -1)
+                if [ -n "$EXTRACTED_DIR" ]; then
+                  # 重命名为 /opt/ceylon
+                  sudo mv "$EXTRACTED_DIR" /opt/ceylon
+                  echo "export CEYLON_HOME=/opt/ceylon" >> ~/.bashrc
+                  echo "export PATH=\$PATH:\$CEYLON_HOME/bin" >> ~/.bashrc
+                  export CEYLON_HOME=/opt/ceylon
+                  export PATH=$PATH:$CEYLON_HOME/bin
+                else
+                  echo "Error: Could not find extracted Ceylon directory"
+                  exit 1
+                fi
               else
-                echo "Warning: Ceylon download failed, skipping installation"
+                echo "Error: Ceylon download failed"
                 exit 1
               fi
               ;;
@@ -164,14 +173,13 @@ jobs:
             "Ceylon")
               # 创建模块描述文件
               echo 'module cboj "1.0.0" {}' > module.ceylon
-              # 用户代码写入 main.ceylon
-              echo "$CODE_RAW" > main.ceylon
-              # 编译
+              # 用户代码写入 main.ceylon（但实际用户代码应包含 run 函数）
+              echo "$CODE_RAW" > source.ceylon
+              # 编译（注意模块名和源文件位置）
               ceylon compile cboj
               # 运行
               ceylon run cboj/1.0.0
               ;;
-            *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
           echo "$CODE_RAW" > "main.$EXT"
