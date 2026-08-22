@@ -21,12 +21,7 @@ jobs:
             "C") sudo apt-get install -y gcc ;;
             "C++98"|"C++03"|"C++11"|"C++14"|"C++17"|"C++20"|"C++23"|"C++26")
               sudo apt-get install -y g++ ;;
-            "Python2")
-              sudo apt-get install -y python2.7
-              sudo ln -sf /usr/bin/python2.7 /usr/local/bin/python2
-              ;;
             "Python3") sudo apt-get install -y python3 ;;
-            "PyPy2") sudo apt-get install -y pypy || sudo apt-get install -y pypy2 ;;
             "PyPy3") sudo apt-get install -y pypy3 ;;
             "Java8") sudo apt-get install -y openjdk-8-jdk ;;
             "Java11") sudo apt-get install -y openjdk-11-jdk ;;
@@ -36,7 +31,10 @@ jobs:
             "Rust") sudo apt-get install -y rustc cargo ;;
             "Ruby") sudo apt-get install -y ruby-full ;;
             "PHP") sudo apt-get install -y php-cli ;;
-            "Javascript"|"Typescript") sudo apt-get install -y nodejs npm ;;
+            "Javascript"|"Typescript")
+              sudo apt-get install -y nodejs npm
+              sudo npm install -g typescript
+              ;;
             "Lua") sudo apt-get install -y lua5.4 ;;
             "Perl") sudo apt-get install -y perl ;;
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
@@ -69,25 +67,35 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              sudo apt-get install -y expect
-              wget https://github.com/LibertyEiffel/Liberty/archive/master.tar.gz
-              tar -xzf master.tar.gz
-              cd Liberty-master
-              export TERM=xterm
-              unbuffer ./install.sh -bootstrap
-              cd ..
+              # 使用官方预编译 EiffelStudio 25.12 (x86-64)
+              EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
+              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
+              tar -xjf ${EIFFEL_DIR}.tar.bz2
+              # 设置完整的 Eiffel 环境变量
+              echo "ISE_EIFFEL=$PWD/${EIFFEL_DIR}" >> $GITHUB_ENV
+              echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
+              echo "ISE_LIBRARY=$PWD/${EIFFEL_DIR}/library" >> $GITHUB_ENV
+              echo "$PWD/${EIFFEL_DIR}/bin" >> $GITHUB_PATH
+              # 生成简化的 ECF 配置文件（无 file_rule，避免排除源文件）
+              cat > default.ecf <<'EOF'
+              <?xml version="1.0" encoding="UTF-8"?>
+              <system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-1ca4-aaa9-11445b789abc">
+                <target name="main">
+                  <root class="MAIN" feature="make"/>
+                  <cluster name="main" location="."/>
+                </target>
+              </system>
+              EOF
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
-              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-              export PATH=$JAVA_HOME/bin:$PATH
+              echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
               cd ceylon
               ant clean dist
               sudo mv dist/dist /opt/ceylon
-              export CEYLON_HOME=/opt/ceylon
-              export PATH=$CEYLON_HOME/bin:$PATH
-              ceylon --version
+              echo "CEYLON_HOME=/opt/ceylon" >> $GITHUB_ENV
+              echo "/opt/ceylon/bin" >> $GITHUB_PATH
               ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
@@ -107,78 +115,45 @@ jobs:
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
-          # ---------- 统一测试循环 ----------
-          run_tests() {
-            local run_cmd="$1"
-            local total_time=0
-            local max_mem=0
-            local status="accepted"
-            echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-            while read -r test; do
-              INPUT=$(echo "$test" | jq -r '.input')
-              EXPECTED=$(echo "$test" | jq -r '.output')
-              OUT_FILE=$(mktemp)
-              MEM_FILE=$(mktemp)
-              START=$(date +%s%N)
-              # 子 shell 中设置内存限制，并通过 PIPESTATUS[1] 获取 timeout 的退出码
-              (
-                ulimit -v $MEM_KB 2>/dev/null || true
-                echo "$INPUT" | timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE"
-                exit ${PIPESTATUS[1]}
-              ) 2>/dev/null
-              EXIT_CODE=$?
-              # 清理退出码（确保数字）
-              EXIT_CODE=$(echo "$EXIT_CODE" | tr -cd '0-9')
-              [ -z "$EXIT_CODE" ] && EXIT_CODE=0
-              END=$(date +%s%N)
-              TIME_USED=$((($END - $START) / 1000000))
-              total_time=$((total_time + TIME_USED))
-              MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-              [ -z "$MEM_USED" ] && MEM_USED=0
-              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
-              OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
-              EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-              rm -f "$OUT_FILE" "$MEM_FILE"
-
-              if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
-                if echo "$OUTPUT" | grep -q "Killed"; then
-                  status="memory_limit_exceeded"
-                else
-                  status="time_limit_exceeded"
-                fi
-                break
-              elif [ "$EXIT_CODE" -ne 0 ]; then
-                status="runtime_error"
-                break
-              elif [ "$OUTPUT" != "$EXPECTED" ]; then
-                status="wrong_answer"
-                break
-              fi
-            done < /tmp/test_cases.txt
-            MEM_MB=$(python3 -c "print(round($max_mem/1024, 2))")
-            echo "$total_time:$MEM_MB:$status"
-          }
-
-          # ---------- 设置语言特定参数 ----------
+          # ---------- 语言特定处理 ----------
           case "$LANG" in
             "Java8"|"Java11"|"Java17"|"Java21")
               echo "$CODE_RAW" > Main.java
-              COMPILE="javac Main.java"
+              if ! javac Main.java 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
               RUN_CMD="java Main"
+              SKIP_COMMON=1
               ;;
 
             "Eiffel")
-              # 使用编译好的 se（位于 Liberty-master/target/bin）
-              export PATH=$(pwd)/Liberty-master/target/bin:$PATH
               echo "$CODE_RAW" > main.e
-              COMPILE="se compile -o program main.e"
-              RUN_CMD="./program"
+              # 复制 ECF 配置文件到当前目录
+              cp default.ecf main.ecf
+              if ! ec -batch -config main.ecf -c_compile -finalize 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              # 检查生成的可执行文件
+              if [ -f "EIFGENs/main/W_code/main" ]; then
+                RUN_CMD="./EIFGENs/main/W_code/main"
+              elif [ -f "EIFGENs/main/F_code/main" ]; then
+                RUN_CMD="./EIFGENs/main/F_code/main"
+              else
+                ERROR_MSG="Eiffel compilation succeeded but executable not found"
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                exit 0
+              fi
+              SKIP_COMMON=1
               ;;
 
             "Ceylon")
-              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-              export CEYLON_HOME=/opt/ceylon
-              export PATH=$JAVA_HOME/bin:$CEYLON_HOME/bin:$PATH
               mkdir -p source/cboj
               echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
               echo "$CODE_RAW" > source/cboj/run.ceylon
@@ -188,12 +163,11 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              IFS=':' read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
-              exit 0
+              RUN_CMD="ceylon run cboj/1.0.0"
+              SKIP_COMMON=1
               ;;
 
+            # 其他语言
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
@@ -203,9 +177,7 @@ jobs:
             "C++20") EXT="cpp"; COMPILE="g++ -std=c++20 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++23") EXT="cpp"; COMPILE="g++ -std=c++23 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++26") EXT="cpp"; COMPILE="g++ -std=c++26 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "Python2") EXT="py"; COMPILE=""; RUN_CMD="python2 main.py" ;;
             "Python3") EXT="py"; COMPILE=""; RUN_CMD="python3 main.py" ;;
-            "PyPy2") EXT="py"; COMPILE=""; RUN_CMD="pypy main.py" ;;
             "PyPy3") EXT="py"; COMPILE=""; RUN_CMD="pypy3 main.py" ;;
             "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN_CMD="./program" ;;
             "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN_CMD="./program" ;;
@@ -242,32 +214,63 @@ jobs:
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # ---------- 编译与运行 ----------
-          # Java 和 Eiffel 已在上面的 case 中设置好文件，且 compile 命令非空
-          if [[ "$LANG" == "Java8" || "$LANG" == "Java11" || "$LANG" == "Java17" || "$LANG" == "Java21" || "$LANG" == "Eiffel" ]]; then
-            if ! $COMPILE 2> compile_error.log; then
-              ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-              exit 0
-            fi
-            IFS=':' read total_time max_mem status <<< $(run_tests "$RUN_CMD")
-            curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-              -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
-            exit 0
-          fi
-
-          # ---------- 其他语言通用流程 ----------
-          echo "$CODE_RAW" > "main.$EXT"
-          if [[ -n "$COMPILE" ]]; then
-            if ! $COMPILE 2> compile_error.log; then
-              ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-              exit 0
+          # ---------- 通用编译（非 Java/Eiffel/Ceylon） ----------
+          if [ -z "$SKIP_COMMON" ]; then
+            echo "$CODE_RAW" > "main.$EXT"
+            if [[ -n "$COMPILE" ]]; then
+              if ! $COMPILE 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
             fi
           fi
 
-          IFS=':' read total_time max_mem status <<< $(run_tests "$RUN_CMD")
+          # ---------- 测试循环 ----------
+          TOTAL_TIME=0
+          MAX_MEM=0
+          STATUS="accepted"
+
+          echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+          while read -r test; do
+            INPUT=$(echo "$test" | jq -r '.input')
+            EXPECTED=$(echo "$test" | jq -r '.output')
+            OUT_FILE=$(mktemp)
+            ERR_FILE=$(mktemp)
+            MEM_FILE=$(mktemp)
+
+            START=$(date +%s%N)
+            # 使用 bash -c 稳定执行，避免 shell 解析问题
+            (ulimit -v "$MEM_KB" 2>/dev/null || true
+             echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout "$TIMEOUT_SEC"s bash -c "$RUN_CMD" > "$OUT_FILE" 2> "$ERR_FILE"
+            )
+            EXIT_CODE=$?
+            END=$(date +%s%N)
+
+            TIME_USED=$((($END - $START) / 1000000))
+            TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
+
+            MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+            [ -z "$MEM_USED" ] && MEM_USED=0
+            [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
+
+            OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+            EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+            rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
+
+            if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
+              STATUS="time_limit_exceeded"
+              break
+            elif [ "$EXIT_CODE" -ne 0 ]; then
+              STATUS="runtime_error"
+              break
+            elif [ "$OUTPUT" != "$EXPECTED" ]; then
+              STATUS="wrong_answer"
+              break
+            fi
+          done < /tmp/test_cases.txt
+
+          MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
