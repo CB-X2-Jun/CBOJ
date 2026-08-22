@@ -36,7 +36,14 @@ jobs:
             "Perl") sudo apt-get install -y perl ;;
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
             "Julia") sudo apt-get install -y julia ;;
-            "Dart") sudo apt-get install -y dart ;;
+            "Dart")
+              # 添加 Dart 官方源
+              sudo apt-get install -y wget
+              wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo tee /usr/share/keyrings/dart.gpg > /dev/null
+              echo "deb [signed-by=/usr/share/keyrings/dart.gpg] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main" | sudo tee /etc/apt/sources.list.d/dart_stable.list
+              sudo apt-get update
+              sudo apt-get install -y dart
+              ;;
             "Swift") sudo apt-get install -y swift ;;
             "Brainfuck") sudo apt-get install -y beef ;;
             "TeX") sudo apt-get install -y texlive-binaries ;;
@@ -95,15 +102,13 @@ jobs:
             "PyPy3") EXT="py"; COMPILE=""; RUN="pypy3 main.py" ;;
             "Java8")
               EXT="java"
-              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-              export PATH=$JAVA_HOME/bin:$PATH
+              echo "$CODE_RAW" > "Main.$EXT"
               COMPILE="javac Main.java"
               RUN="java Main"
               ;;
             "Java21")
               EXT="java"
-              export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-              export PATH=$JAVA_HOME/bin:$PATH
+              echo "$CODE_RAW" > "Main.$EXT"
               COMPILE="javac Main.java"
               RUN="java Main"
               ;;
@@ -135,7 +140,7 @@ jobs:
             "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN="java -jar program.jar" ;;
             "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN="./program" ;;
             "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN="./program" ;;
-            "Dart") EXT="dart"; COMPILE="dart compile exe main.dart -o program"; RUN="./program" ;;
+            "Dart") EXT="dart"; COMPILE=""; RUN="dart run main.dart" ;;
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
