@@ -81,8 +81,8 @@ jobs:
               cd ceylon
               ant clean dist
             
-              # 5. 移动产物
-              sudo mv dist /opt/ceylon
+              # 5. 移动产物（注意路径）
+              sudo mv dist/dist /opt/ceylon
               export CEYLON_HOME=/opt/ceylon
               export PATH=$CEYLON_HOME/bin:$PATH
               ceylon --version
