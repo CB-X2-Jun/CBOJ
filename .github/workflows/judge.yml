@@ -70,8 +70,8 @@ jobs:
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
               wget https://github.com/LibertyEiffel/Liberty/archive/refs/tags/bell.tar.gz
-              tar -xzf Liberty-bell.tar.gz
-              cd Liberty-*/
+              tar -xzf bell.tar.gz
+              cd bell-*/ || cd Liberty-*/
               export TERM=dumb
               chmod +x install.sh
               sudo ./install.sh -local_install
@@ -120,8 +120,12 @@ jobs:
               OUT_FILE=$(mktemp)
               MEM_FILE=$(mktemp)
               START=$(date +%s%N)
-              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
+              # 运行命令并捕获输出和退出码
+              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
               EXIT_CODE=$?
+              # 确保 EXIT_CODE 是纯数字
+              EXIT_CODE=$(echo "$EXIT_CODE" | grep -o '^[0-9]*')
+              [ -z "$EXIT_CODE" ] && EXIT_CODE=0
               END=$(date +%s%N)
               TIME_USED=$((($END - $START) / 1000000))
               total_time=$((total_time + TIME_USED))
