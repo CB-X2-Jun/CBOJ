@@ -70,11 +70,11 @@ jobs:
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
               wget https://github.com/LibertyEiffel/Liberty/archive/refs/tags/bell.tar.gz
-              tar -xzf bell.tar.gz
-              cd bell-*/ || cd Liberty-*/
+              tar -xzf Liberty-bell.tar.gz
+              cd Liberty-*/
               export TERM=dumb
               chmod +x install.sh
-              sudo ./install.sh --prefix=/usr/local
+              sudo ./install.sh -local_install
               cd ..
               ;;
             "Ceylon")
@@ -107,8 +107,8 @@ jobs:
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
-          # ---------- 通用测试循环（所有语言统一使用） ----------
-                    run_tests() {
+          # ---------- 统一测试循环（使用 [[ ]] 避免参数过多） ----------
+          run_tests() {
             local run_cmd="$1"
             local total_time=0
             local max_mem=0
@@ -126,42 +126,40 @@ jobs:
               TIME_USED=$((($END - $START) / 1000000))
               total_time=$((total_time + TIME_USED))
               MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-              [ -z "$MEM_USED" ] && MEM_USED=0
-              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
+              [[ -z "$MEM_USED" ]] && MEM_USED=0
+              [[ "$MEM_USED" -gt "$max_mem" ]] && max_mem=$MEM_USED
               OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
               EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
               rm -f "$OUT_FILE" "$MEM_FILE"
 
-              # ✅ 关键：所有变量加双引号
-              if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
+              if [[ "$EXIT_CODE" -eq 124 ]] || [[ "$EXIT_CODE" -eq 137 ]]; then
                 if echo "$OUTPUT" | grep -q "Killed"; then
                   status="memory_limit_exceeded"
                 else
                   status="time_limit_exceeded"
                 fi
                 break
-              elif [ "$EXIT_CODE" -ne 0 ]; then
+              elif [[ "$EXIT_CODE" -ne 0 ]]; then
                 status="runtime_error"
                 break
-              elif [ "$OUTPUT" != "$EXPECTED" ]; then
+              elif [[ "$OUTPUT" != "$EXPECTED" ]]; then
                 status="wrong_answer"
                 break
               fi
             done < /tmp/test_cases.txt
             MEM_MB=$(python3 -c "print(round($max_mem/1024, 2))")
-            echo "$total_time $MEM_MB $status"
+            # 用冒号分隔，避免空格干扰 read
+            echo "$total_time:$MEM_MB:$status"
           }
-          
-          # ---------- 设置语言特定的编译/运行参数 ----------
+
+          # ---------- 设置语言特定参数 ----------
           case "$LANG" in
-            # Java 系列：必须写 Main.java
             "Java8"|"Java11"|"Java17"|"Java21")
               echo "$CODE_RAW" > Main.java
               COMPILE="javac Main.java"
               RUN_CMD="java Main"
               ;;
 
-            # Eiffel
             "Eiffel")
               export PATH=/usr/local/bin:$PATH
               echo "$CODE_RAW" > main.e
@@ -169,7 +167,6 @@ jobs:
               RUN_CMD="./program"
               ;;
 
-            # Ceylon 特殊处理（模块结构）
             "Ceylon")
               export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
               export CEYLON_HOME=/opt/ceylon
@@ -183,14 +180,12 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              # Ceylon 直接调用 run_tests，使用 ceylon run 命令
-              read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
+              IFS=':' read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                 -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
               exit 0
               ;;
 
-            # 其他语言：使用通用文件名 main.$EXT
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
@@ -239,24 +234,22 @@ jobs:
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # ---------- 对于 Java 和 Eiffel，它们已在 case 中设置了 COMPILE 和 RUN_CMD，但未写通用文件 ----------
-          # 先处理 Java 和 Eiffel 的编译（它们在 case 中已经写好源文件）
-          if [ "$LANG" = "Java8" ] || [ "$LANG" = "Java11" ] || [ "$LANG" = "Java17" ] || [ "$LANG" = "Java21" ] || [ "$LANG" = "Eiffel" ]; then
-            # 编译（已由 case 中的 COMPILE 变量指定）
+          # ---------- 编译与运行 ----------
+          # Java 和 Eiffel 已在上面的 case 中设置好文件，且 compile 命令非空
+          if [[ "$LANG" == "Java8" || "$LANG" == "Java11" || "$LANG" == "Java17" || "$LANG" == "Java21" || "$LANG" == "Eiffel" ]]; then
             if ! $COMPILE 2> compile_error.log; then
               ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                 -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
               exit 0
             fi
-            # 运行测试
-            read total_time max_mem status <<< $(run_tests "$RUN_CMD")
+            IFS=':' read total_time max_mem status <<< $(run_tests "$RUN_CMD")
             curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
               -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
             exit 0
           fi
 
-          # ---------- 其他语言走通用流程 ----------
+          # ---------- 其他语言通用流程 ----------
           echo "$CODE_RAW" > "main.$EXT"
           if [[ -n "$COMPILE" ]]; then
             if ! $COMPILE 2> compile_error.log; then
@@ -267,6 +260,6 @@ jobs:
             fi
           fi
 
-          read total_time max_mem status <<< $(run_tests "$RUN_CMD")
+          IFS=':' read total_time max_mem status <<< $(run_tests "$RUN_CMD")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
             -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
