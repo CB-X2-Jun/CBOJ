@@ -108,7 +108,7 @@ jobs:
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
           # ---------- 通用测试循环（所有语言统一使用） ----------
-          run_tests() {
+                    run_tests() {
             local run_cmd="$1"
             local total_time=0
             local max_mem=0
@@ -120,7 +120,6 @@ jobs:
               OUT_FILE=$(mktemp)
               MEM_FILE=$(mktemp)
               START=$(date +%s%N)
-              # 在子 shell 中设置内存限制并运行
               (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
               EXIT_CODE=$?
               END=$(date +%s%N)
@@ -133,14 +132,15 @@ jobs:
               EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
               rm -f "$OUT_FILE" "$MEM_FILE"
 
-              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+              # ✅ 关键：所有变量加双引号
+              if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
                 if echo "$OUTPUT" | grep -q "Killed"; then
                   status="memory_limit_exceeded"
                 else
                   status="time_limit_exceeded"
                 fi
                 break
-              elif [ $EXIT_CODE -ne 0 ]; then
+              elif [ "$EXIT_CODE" -ne 0 ]; then
                 status="runtime_error"
                 break
               elif [ "$OUTPUT" != "$EXPECTED" ]; then
@@ -148,11 +148,10 @@ jobs:
                 break
               fi
             done < /tmp/test_cases.txt
-            # 将内存从 KB 转换为 MB（保留两位小数）
             MEM_MB=$(python3 -c "print(round($max_mem/1024, 2))")
             echo "$total_time $MEM_MB $status"
           }
-
+          
           # ---------- 设置语言特定的编译/运行参数 ----------
           case "$LANG" in
             # Java 系列：必须写 Main.java
