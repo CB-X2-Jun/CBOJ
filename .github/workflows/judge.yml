@@ -138,7 +138,7 @@ jobs:
             "Dart") EXT="dart"; COMPILE="dart compile exe main.dart -o program"; RUN="./program" ;;
             "Brainfuck") EXT="bf"; COMPILE=""; RUN="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN="tex -interaction=batchmode main.tex" ;;
-            "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh main.ps1" ;;
+            "Powershell") EXT="ps1"; COMPILE=""; RUN="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
             "Eiffel") EXT="e"; COMPILE="se compile -o program main.e"; RUN="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
