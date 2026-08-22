@@ -69,13 +69,12 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
+              sudo apt-get install -y expect
               wget https://github.com/LibertyEiffel/Liberty/archive/master.tar.gz
               tar -xzf master.tar.gz
               cd Liberty-master
-              export TERM=dumb
-              chmod +x install.sh
-              # 仅进行引导编译，不安装到系统
-              ./install.sh -bootstrap
+              export TERM=xterm
+              unbuffer ./install.sh -bootstrap
               cd ..
               ;;
             "Ceylon")
@@ -121,33 +120,37 @@ jobs:
               OUT_FILE=$(mktemp)
               MEM_FILE=$(mktemp)
               START=$(date +%s%N)
-              # 运行并限制内存
-              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
+              # 子 shell 中设置内存限制，并通过 PIPESTATUS[1] 获取 timeout 的退出码
+              (
+                ulimit -v $MEM_KB 2>/dev/null || true
+                echo "$INPUT" | timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE"
+                exit ${PIPESTATUS[1]}
+              ) 2>/dev/null
               EXIT_CODE=$?
-              # 清理退出码（确保为数字）
+              # 清理退出码（确保数字）
               EXIT_CODE=$(echo "$EXIT_CODE" | tr -cd '0-9')
               [ -z "$EXIT_CODE" ] && EXIT_CODE=0
               END=$(date +%s%N)
               TIME_USED=$((($END - $START) / 1000000))
               total_time=$((total_time + TIME_USED))
               MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-              [[ -z "$MEM_USED" ]] && MEM_USED=0
-              [[ "$MEM_USED" -gt "$max_mem" ]] && max_mem=$MEM_USED
+              [ -z "$MEM_USED" ] && MEM_USED=0
+              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
               OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
               EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
               rm -f "$OUT_FILE" "$MEM_FILE"
 
-              if [[ "$EXIT_CODE" -eq 124 ]] || [[ "$EXIT_CODE" -eq 137 ]]; then
+              if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
                 if echo "$OUTPUT" | grep -q "Killed"; then
                   status="memory_limit_exceeded"
                 else
                   status="time_limit_exceeded"
                 fi
                 break
-              elif [[ "$EXIT_CODE" -ne 0 ]]; then
+              elif [ "$EXIT_CODE" -ne 0 ]; then
                 status="runtime_error"
                 break
-              elif [[ "$OUTPUT" != "$EXPECTED" ]]; then
+              elif [ "$OUTPUT" != "$EXPECTED" ]; then
                 status="wrong_answer"
                 break
               fi
@@ -165,18 +168,11 @@ jobs:
               ;;
 
             "Eiffel")
+              # 使用编译好的 se（位于 Liberty-master/target/bin）
               export PATH=$(pwd)/Liberty-master/target/bin:$PATH
               echo "$CODE_RAW" > main.e
-              if ! se compile -o program main.e 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              IFS=':' read total_time max_mem status <<< $(run_tests "./program")
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
-              exit 0
+              COMPILE="se compile -o program main.e"
+              RUN_CMD="./program"
               ;;
 
             "Ceylon")
