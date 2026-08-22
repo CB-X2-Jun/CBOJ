@@ -199,7 +199,7 @@ jobs:
             "Lua") EXT="lua"; COMPILE=""; RUN_CMD="lua main.lua" ;;
             "Perl") EXT="pl"; COMPILE=""; RUN_CMD="perl main.pl" ;;
             "Haskell") EXT="hs"; COMPILE="ghc -O2 main.hs -o program"; RUN_CMD="./program" ;;
-            "Julia") EXT="jl"; COMPILE=""; RUN_CMD="julia main.jl" ;;
+            "Julia") EXT="jl"; COMPILE=""; RUN_CMD="julia main.jl"; which julia; julia --version ;;
             "Swift") EXT="swift"; COMPILE="swiftc -O main.swift -o program"; RUN_CMD="./program" ;;
             "Bash") EXT="sh"; COMPILE=""; RUN_CMD="bash main.sh" ;;
             "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
@@ -265,6 +265,17 @@ jobs:
 
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+            
+            echo "========== DEBUG =========="
+            echo "EXIT_CODE=$EXIT_CODE"
+            echo "STDOUT:"
+            cat "$OUT_FILE" || true
+            echo "STDERR:"
+            cat "$ERR_FILE" || true
+            echo "=========================="
+            
+            END=$(date +%s%N)
+
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
 
             if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
