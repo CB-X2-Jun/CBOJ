@@ -39,8 +39,15 @@ jobs:
             "Perl") sudo apt-get install -y perl ;;
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
             "Julia")
-              wget -qO- https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | sudo tar xz -C /opt
-              sudo ln -s /opt/julia-1.10.5/bin/julia /usr/local/bin/julia
+              JULIA_VERSION="1.10.5"
+              JULIA_DIR="julia-${JULIA_VERSION}"
+            
+              wget https://julialang-s3.julialang.org/bin/linux/x64/1.10/${JULIA_DIR}-linux-x86_64.tar.gz
+            
+              tar -xzf ${JULIA_DIR}-linux-x86_64.tar.gz -C /opt
+            
+              sudo ln -sf /opt/${JULIA_DIR}/bin/julia /usr/local/bin/julia
+            
               ;;
             "Dart")
               sudo sh -c 'echo "deb [trusted=yes] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main" > /etc/apt/sources.list.d/dart_stable.list'
@@ -68,14 +75,15 @@ jobs:
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
               EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
-
+            
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
               tar -xjf ${EIFFEL_DIR}.tar.bz2
-
+            
               echo "ISE_EIFFEL=$PWD/${EIFFEL_DIR}" >> $GITHUB_ENV
               echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
               echo "ISE_LIBRARY=$PWD/${EIFFEL_DIR}/library" >> $GITHUB_ENV
-              echo "$PWD/${EIFFEL_DIR}/bin" >> $GITHUB_PATH
+            
+              echo "$PWD/${EIFFEL_DIR}/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
 
               printf '%s\n' \
               '<?xml version="1.0" encoding="UTF-8"?>' \
