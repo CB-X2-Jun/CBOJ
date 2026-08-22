@@ -66,26 +66,25 @@ jobs:
               sudo apt-get install -y liberty-eiffel-all
               ;;
             "Ceylon")
-              # 1. 安装构建依赖
-              sudo apt-get update
-              sudo apt-get install -y openjdk-8-jdk git ant unzip wget
-
-              # 2. 克隆 Ceylon 源代码（官方仓库）
+              # 1. 确保安装 JDK 8（如果还没装）
+              sudo apt-get install -y openjdk-8-jdk
+            
+              # 2. 强制设置 JAVA_HOME 为 JDK 8（路径可能不同，先确认）
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+              export PATH=$JAVA_HOME/bin:$PATH
+            
+              # 3. 验证当前 javac 版本（应该是 1.8）
+              javac -version
+            
+              # 4. 再克隆并构建（ant 会继承环境变量）
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
               cd ceylon
-
-              # 3. 构建（修改点1：目标改为 dist，并先执行 clean）
               ant clean dist
-
-              # 4. 构建好的发行版位于 ceylon/dist 目录（修改点2：路径修正）
-              cd ..
-              sudo mv ceylon/dist /opt/ceylon
-
-              # 5. 设置环境变量（对当前 shell 生效）
+            
+              # 5. 移动产物
+              sudo mv dist /opt/ceylon
               export CEYLON_HOME=/opt/ceylon
               export PATH=$CEYLON_HOME/bin:$PATH
-
-              # 6. 验证
               ceylon --version
               ;;
             "Bash") echo "Bash is built-in" ;;
