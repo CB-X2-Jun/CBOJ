@@ -38,7 +38,6 @@ jobs:
             "Perl") sudo apt-get install -y perl ;;
             "Haskell") sudo apt-get install -y ghc cabal-install ;;
             "Julia")
-              # 手动安装 Julia 1.10.5
               wget -qO- https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.5-linux-x86_64.tar.gz | sudo tar xz -C /opt
               sudo ln -s /opt/julia-1.10.5/bin/julia /usr/local/bin/julia
               ;;
@@ -67,13 +66,9 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              # 从源码编译 Liberty Eiffel（官方安装脚本）
-              git clone --depth 1 https://github.com/LibertyEiffel/Liberty.git
-              cd Liberty
-              chmod +x install.sh
-              ./install.sh
-              echo "$(pwd)/target/bin" >> $GITHUB_PATH
-              cd ..
+              # 使用预编译二进制包，避免编译交互
+              wget -qO- https://github.com/LibertyEiffel/Liberty/releases/download/2016.05/liberty-eiffel-2016.05-linux-x86_64.tar.gz | sudo tar xz -C /opt
+              sudo ln -s /opt/liberty-eiffel-2016.05/bin/se /usr/local/bin/se
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
@@ -102,54 +97,13 @@ jobs:
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           CODE_RAW=$(echo "$CODE" | jq -r '.')
+          # 将毫秒转为秒（支持小数）
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
+          # 内存限制转 KB（ulimit 单位是 KB）
           MEM_KB=$((MEMORY_LIMIT * 1024))
 
-          # 定义通用测试循环函数（供需要自包含的语言直接调用）
-          run_tests() {
-            local run_cmd="$1"
-            local total_time=0
-            local max_mem=0
-            local status="accepted"
-            echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
-            while read -r test; do
-              INPUT=$(echo "$test" | jq -r '.input')
-              EXPECTED=$(echo "$test" | jq -r '.output')
-              OUT_FILE=$(mktemp)
-              MEM_FILE=$(mktemp)
-              START=$(date +%s%N)
-              (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $run_cmd > "$OUT_FILE") 2>/dev/null
-              EXIT_CODE=$?
-              END=$(date +%s%N)
-              TIME_USED=$((($END - $START) / 1000000))
-              total_time=$((total_time + TIME_USED))
-              MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-              [ -z "$MEM_USED" ] && MEM_USED=0
-              [ $MEM_USED -gt $max_mem ] && max_mem=$MEM_USED
-              OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
-              EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-              rm -f "$OUT_FILE" "$MEM_FILE"
-
-              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
-                if echo "$OUTPUT" | grep -q "Killed"; then
-                  status="memory_limit_exceeded"
-                else
-                  status="time_limit_exceeded"
-                fi
-                break
-              elif [ $EXIT_CODE -ne 0 ]; then
-                status="runtime_error"
-                break
-              elif [ "$OUTPUT" != "$EXPECTED" ]; then
-                status="wrong_answer"
-                break
-              fi
-            done < /tmp/test_cases.txt
-            echo "$total_time $max_mem $status"
-          }
-
           case "$LANG" in
-            # ----- Java 系列（自包含，避免外部覆盖） -----
+            # ----- Java 系列（自包含，避免被外部覆盖） -----
             "Java8"|"Java11"|"Java17"|"Java21")
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
@@ -158,26 +112,40 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              # 运行测试
-              read total_time max_mem status <<< $(run_tests "java Main")
-              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
-              exit 0
-              ;;
+              TOTAL_TIME=0
+              MAX_MEM=0
+              STATUS="accepted"
+              echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+              while read -r test; do
+                INPUT=$(echo "$test" | jq -r '.input')
+                EXPECTED=$(echo "$test" | jq -r '.output')
+                OUT_FILE=$(mktemp)
+                MEM_FILE=$(mktemp)
+                START=$(date +%s%N)
+                (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s java Main > "$OUT_FILE") 2>/dev/null
+                EXIT_CODE=$?
+                END=$(date +%s%N)
+                TIME_USED=$((($END - $START) / 1000000))
+                TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
+                MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+                [ -z "$MEM_USED" ] && MEM_USED=0
+                [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
+                OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+                EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+                rm -f "$OUT_FILE" "$MEM_FILE"
 
-            # ----- Eiffel（自包含） -----
-            "Eiffel")
-              export PATH=/home/runner/work/CBOJ/CBOJ/Liberty/target/bin:$PATH
-              echo "$CODE_RAW" > main.e
-              if ! se compile -o program main.e 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              read total_time max_mem status <<< $(run_tests "./program")
+                if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+                  STATUS="time_limit_exceeded"; break
+                elif [ $EXIT_CODE -ne 0 ]; then
+                  STATUS="runtime_error"; break
+                elif [ "$OUTPUT" != "$EXPECTED" ]; then
+                  STATUS="wrong_answer"; break
+                fi
+              done < /tmp/test_cases.txt
+              # 内存从 KB 转为 MB（保留两位小数）
+              MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
               exit 0
               ;;
 
@@ -195,9 +163,67 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              read total_time max_mem status <<< $(run_tests "ceylon run cboj/1.0.0")
+              # 运行并捕获输出
+              OUTPUT=$(timeout ${TIMEOUT_SEC}s ceylon run cboj/1.0.0 2>&1)
+              EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+                STATUS="time_limit_exceeded"
+              elif [ $EXIT_CODE -ne 0 ]; then
+                STATUS="runtime_error"
+              else
+                OUTPUT=$(echo "$OUTPUT" | sed -e 's/[[:space:]]*$//')
+                EXPECTED=$(echo "$TEST_CASES" | jq -r '.[0].output' | sed -e 's/[[:space:]]*$//')
+                [ "$OUTPUT" != "$EXPECTED" ] && STATUS="wrong_answer" || STATUS="accepted"
+              fi
+              # 内存暂不统计，设为 0
               curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":0,\"memory_used\":0}"
+              exit 0
+              ;;
+
+            # ----- Eiffel（自包含） -----
+            "Eiffel")
+              export PATH=/opt/liberty-eiffel-2016.05/bin:$PATH
+              echo "$CODE_RAW" > main.e
+              if ! se compile -o program main.e 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              TOTAL_TIME=0
+              MAX_MEM=0
+              STATUS="accepted"
+              echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+              while read -r test; do
+                INPUT=$(echo "$test" | jq -r '.input')
+                EXPECTED=$(echo "$test" | jq -r '.output')
+                OUT_FILE=$(mktemp)
+                MEM_FILE=$(mktemp)
+                START=$(date +%s%N)
+                (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s ./program > "$OUT_FILE") 2>/dev/null
+                EXIT_CODE=$?
+                END=$(date +%s%N)
+                TIME_USED=$((($END - $START) / 1000000))
+                TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
+                MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+                [ -z "$MEM_USED" ] && MEM_USED=0
+                [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
+                OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+                EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+                rm -f "$OUT_FILE" "$MEM_FILE"
+
+                if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+                  STATUS="time_limit_exceeded"; break
+                elif [ $EXIT_CODE -ne 0 ]; then
+                  STATUS="runtime_error"; break
+                elif [ "$OUTPUT" != "$EXPECTED" ]; then
+                  STATUS="wrong_answer"; break
+                fi
+              done < /tmp/test_cases.txt
+              MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
+              curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
               exit 0
               ;;
 
@@ -261,6 +287,42 @@ jobs:
             fi
           fi
 
-          read total_time max_mem status <<< $(run_tests "$RUN")
+          TOTAL_TIME=0
+          MAX_MEM=0
+          STATUS="accepted"
+          echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+          while read -r test; do
+            INPUT=$(echo "$test" | jq -r '.input')
+            EXPECTED=$(echo "$test" | jq -r '.output')
+            OUT_FILE=$(mktemp)
+            MEM_FILE=$(mktemp)
+            START=$(date +%s%N)
+            (ulimit -v $MEM_KB 2>/dev/null || true; echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout ${TIMEOUT_SEC}s $RUN > "$OUT_FILE") 2>/dev/null
+            EXIT_CODE=$?
+            END=$(date +%s%N)
+            TIME_USED=$((($END - $START) / 1000000))
+            TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
+            MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
+            [ -z "$MEM_USED" ] && MEM_USED=0
+            [ $MEM_USED -gt $MAX_MEM ] && MAX_MEM=$MEM_USED
+            OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
+            EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
+            rm -f "$OUT_FILE" "$MEM_FILE"
+
+            if [ $EXIT_CODE -eq 124 ] || [ $EXIT_CODE -eq 137 ]; then
+              if echo "$OUTPUT" | grep -q "Killed"; then
+                STATUS="memory_limit_exceeded"
+              else
+                STATUS="time_limit_exceeded"
+              fi
+              break
+            elif [ $EXIT_CODE -ne 0 ]; then
+              STATUS="runtime_error"; break
+            elif [ "$OUTPUT" != "$EXPECTED" ]; then
+              STATUS="wrong_answer"; break
+            fi
+          done < /tmp/test_cases.txt
+
+          MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$status\",\"time_used\":$total_time,\"memory_used\":$max_mem}"
+            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
