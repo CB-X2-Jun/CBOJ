@@ -248,7 +248,6 @@ jobs:
               echo "===== Compile Eiffel ====="
               "$EC" \
                 -batch \
-                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
