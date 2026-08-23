@@ -229,12 +229,11 @@ jobs:
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT/library"
+              export ISE_LIBRARY="$EIFFEL_ROOT"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
               echo "===== Compile Eiffel ====="
               "$EC" \
                 -batch \
-                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
