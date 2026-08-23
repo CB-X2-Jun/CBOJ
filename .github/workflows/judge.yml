@@ -70,41 +70,24 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
-            
-              tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
-            
-              echo "Extracted:"
-              find . -maxdepth 3 -type d | grep Eiffel
-            
-              EIFFEL_ROOT="$PWD/Eiffel_25.12"
-            
-              if [ ! -f "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" ]; then
-                  echo "Eiffel compiler missing!"
-                  find "$EIFFEL_ROOT" -name ec -type f
-                  exit 1
-              fi
-            
-              echo "Found Eiffel at:"
-              echo "$EIFFEL_ROOT"
-            
+              EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
+              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
+              tar -xjf ${EIFFEL_DIR}.tar.bz2
+              EIFFEL_ROOT="$PWD/${EIFFEL_DIR}"
               echo "ISE_EIFFEL=$EIFFEL_ROOT" >> $GITHUB_ENV
               echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
               echo "ISE_LIBRARY=$EIFFEL_ROOT/library" >> $GITHUB_ENV
-            
               echo "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
-            
               "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
-            
               printf '%s\n' \
-              '<?xml version="1.0" encoding="UTF-8"?>' \
-              '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
-              '  <target name="main">' \
-              '    <root class="MAIN" feature="make"/>' \
-              '    <cluster name="main" location="."/>' \
-              '  </target>' \
-              '</system>' \
-              > default.ecf
+                '<?xml version="1.0" encoding="UTF-8"?>' \
+                '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
+                '  <target name="main">' \
+                '    <root class="MAIN" feature="make"/>' \
+                '    <cluster name="main" location="." recursive="true"/>' \
+                '  </target>' \
+                '</system>' \
+                > default.ecf
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
@@ -134,7 +117,6 @@ jobs:
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
           
           # ---------- 内存限制倍率 ----------
-          # 根据不同语言设置倍率，避免解释器/JVM 启动内存被误判为 MLE
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
             "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=4 ;;
@@ -163,42 +145,41 @@ jobs:
               echo "$CODE_RAW" > main.e
               cp default.ecf main.ecf
             
-              EC=$(find "$PWD" -type f -name "ec" | head -1)
+              EIFFEL_ROOT="$PWD/Eiffel_25.12_rev_98922-linux-x86-64"
+              EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
+              FINISH="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/finish_freezing"
             
-              if [ -z "$EC" ]; then
-                  echo "Eiffel compiler not found"
+              if [ ! -x "$EC" ]; then
+                  echo "Eiffel compiler not found: $EC"
                   exit 1
               fi
             
-              chmod +x "$EC"
+              echo "Using Eiffel compiler:"
+              "$EC" -version
             
-              if ! "$EC" -batch -config main.ecf -c_compile 2> compile_error.log; then
-                  ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+              # 编译（包含 -finalize，生成 F_code 或 W_code）
+              "$EC" -batch -config main.ecf -c_compile -finalize > eiffel.log 2>&1 || true
+            
+              # finalize
+              if [ -x "$FINISH" ]; then
+                  "$FINISH" >> eiffel.log 2>&1 || true
+              fi
+            
+              # 检查可执行文件（使用 -f，然后 chmod +x）
+              if [ -f "$PWD/EIFGENs/main/W_code/main" ]; then
+                  chmod +x "$PWD/EIFGENs/main/W_code/main"
+                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
+              elif [ -f "$PWD/EIFGENs/main/F_code/main" ]; then
+                  chmod +x "$PWD/EIFGENs/main/F_code/main"
+                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
+              else
+                  ERROR_MSG=$(cat eiffel.log 2>/dev/null | head -c 500 | jq -sR .)
+                  if [ -z "$ERROR_MSG" ] || [ "$ERROR_MSG" = '""' ]; then
+                      ERROR_MSG="Eiffel compilation failed without error output"
+                  fi
                   curl -X POST "$CALLBACK_URL" \
                     -H "Content-Type: application/json" \
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                  exit 0
-              fi
-            
-              FINISH=$(find "$PWD" -type f -name "finish_freezing" | head -1)
-            
-              if [ -n "$FINISH" ]; then
-                  chmod +x "$FINISH"
-                  "$FINISH"
-              fi
-            
-            
-              if [ -f "$PWD/EIFGENs/main/W_code/main" ]; then
-                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
-            
-              elif [ -f "$PWD/EIFGENs/main/F_code/main" ]; then
-                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
-            
-              else
-                  ERROR_MSG="Eiffel executable not found"
-                  curl -X POST "$CALLBACK_URL" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                   exit 0
               fi
             
@@ -292,7 +273,6 @@ jobs:
             MEM_FILE=$(mktemp)
 
             START=$(date +%s%N)
-            # 使用实际内存限制（倍率放宽），ulimit -v 单位 KB
             (ulimit -v "$REAL_MEM_KB" 2>/dev/null || true
              echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout "$TIMEOUT_SEC"s bash -c "$RUN_CMD" > "$OUT_FILE" 2> "$ERR_FILE"
             )
@@ -303,7 +283,6 @@ jobs:
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
             MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-            # 如果 MEM_USED 为空（可能被 kill 导致 time 未写入），设为 0，避免误判为 MLE
             if [ -z "$MEM_USED" ]; then
               MEM_USED=0
             fi
@@ -312,7 +291,6 @@ jobs:
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
             
-            # 调试输出（便于排查 MLE/TLE/RE）
             echo "========== DEBUG =========="
             echo "EXIT_CODE=$EXIT_CODE"
             echo "MEM_USED=${MEM_USED}KB"
@@ -326,13 +304,10 @@ jobs:
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
 
-            # 状态判断
             if [ "$EXIT_CODE" -eq 124 ]; then
               STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -eq 137 ]; then
-              # 退出码 137 可能是 OOM kill 或其它 kill
-              # 如果使用内存超过放宽后的实际限制，判为 MLE，否则为 RE
               if [ "$MEM_USED" -ge "$REAL_MEM_KB" ]; then
                 STATUS="memory_limit_exceeded"
               else
