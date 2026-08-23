@@ -83,7 +83,7 @@ jobs:
             "Powershell") sudo apt-get install -y powershell ;;
             "INTERCAL")
               sudo apt-get install -y intercal
-              ick --version || true
+              ick - || true
               ;;
             "Eiffel")
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
@@ -214,36 +214,40 @@ jobs:
           
               echo "===== Compile INTERCAL ====="
           
-              if ! ick main.i -o program > intercal.log 2>&1; then
+              if ! ick main.i > intercal.log 2>&1; then
+                  echo "===== INTERCAL compilation failed ====="
+                  cat intercal.log
           
                   ERROR_MSG=$(cat intercal.log | head -c 500 | jq -sR .)
           
                   curl -X POST "$CALLBACK_URL" \
-                  -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                    -H "Content-Type: application/json" \
+                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
           
                   exit 0
               fi
           
           
-              if [ ! -x ./program ]; then
+              echo "===== INTERCAL files ====="
+              ls -la
           
-                  ERROR_MSG="INTERCAL executable missing"
+          
+              if [ ! -x ./main ]; then
+          
+                  ERROR_MSG=$(echo \
+                  "INTERCAL executable not found" \
+                  | jq -sR .)
           
                   curl -X POST "$CALLBACK_URL" \
-                  -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                    -H "Content-Type: application/json" \
+                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
           
                   exit 0
               fi
           
           
-              RUN_CMD="./program"
-          
-              SKIP_COMMON=0
-          
-              EXT="i"
-          
+              RUN_CMD="./main"
+              SKIP_COMMON=1
               ;;
 
             "Fish")
