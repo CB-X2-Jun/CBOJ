@@ -81,21 +81,6 @@ jobs:
             "D") sudo apt-get install -y gdc ;;
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
-            "Whitespace")
-              curl -fL \
-                https://raw.githubusercontent.com/squancy/whitespace-interpreter/main/whitespace.py \
-                -o whitespace_interpreter.py
-            
-              echo '#!/usr/bin/env python3' > whitespace_runner.py
-              echo 'import sys' >> whitespace_runner.py
-              echo 'from whitespace_interpreter import whitespace' >> whitespace_runner.py
-              echo '' >> whitespace_runner.py
-              echo 'with open("main.ws", "r") as f:' >> whitespace_runner.py
-              echo '    code = f.read()' >> whitespace_runner.py
-              echo '' >> whitespace_runner.py
-              echo 'inp = sys.stdin.read()' >> whitespace_runner.py
-              echo 'print(whitespace(code, inp), end="")' >> whitespace_runner.py
-              ;;
             "Eiffel")
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
               tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
@@ -166,13 +151,12 @@ jobs:
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT/library"
+              export ISE_LIBRARY="$EIFFEL_ROOT"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
             
               echo "===== Compile Eiffel ====="
               "$EC" \
                 -batch \
-                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
@@ -219,48 +203,6 @@ jobs:
               RUN_CMD="ceylon run cboj/1.0.0"
               SKIP_COMMON=1
               ;;
-              
-            # "INTERCAL")
-            #   echo "$CODE_RAW" > main.i
-          
-            #   echo "===== Compile INTERCAL ====="
-          
-            #   if ! ick main.i > intercal.log 2>&1; then
-            #       echo "===== INTERCAL compilation failed ====="
-            #       cat intercal.log
-          
-            #       ERROR_MSG=$(cat intercal.log | head -c 500 | jq -sR .)
-          
-            #       curl -X POST "$CALLBACK_URL" \
-            #         -H "Content-Type: application/json" \
-            #         -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-          
-            #       exit 0
-            #   fi
-          
-          
-            #   echo "===== INTERCAL files ====="
-            #   ls -la
-          
-          
-            #   if [ ! -x ./main ]; then
-          
-            #       ERROR_MSG=$(echo \
-            #       "INTERCAL executable not found" \
-            #       | jq -sR .)
-          
-            #       curl -X POST "$CALLBACK_URL" \
-            #         -H "Content-Type: application/json" \
-            #         -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-          
-            #       exit 0
-            #   fi
-          
-          
-            #   RUN_CMD="./main"
-            #   SKIP_COMMON=1
-            #   ;;
-            "Whitespace") EXT="ws"; COMPILE=""; RUN_CMD="python3 whitespace_runner.py" ;;
             "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
