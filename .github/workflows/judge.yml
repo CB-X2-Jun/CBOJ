@@ -83,8 +83,6 @@ jobs:
               echo "ISE_LIBRARY=$EIFFEL_ROOT/library" >> $GITHUB_ENV
               echo "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
               "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
-              mkdir -p src
-              mv main.e src/
               
               printf '%s\n' \
               '<?xml version="1.0" encoding="UTF-8"?>' \
@@ -149,7 +147,8 @@ jobs:
               ;;
 
             "Eiffel")
-              echo "$CODE_RAW" > main.e
+              mkdir -p src
+              echo "$CODE_RAW" > src/main.e
               cp default.ecf main.ecf
             
               EIFFEL_ROOT="$PWD/eiffelstudio-25.12"
