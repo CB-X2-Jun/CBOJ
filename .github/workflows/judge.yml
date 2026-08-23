@@ -70,22 +70,40 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
-              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
-              tar -xjf ${EIFFEL_DIR}.tar.bz2
-              echo "ISE_EIFFEL=$PWD/${EIFFEL_DIR}" >> $GITHUB_ENV
+              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
+            
+              tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
+            
+              echo "Extracted:"
+              find . -maxdepth 3 -type d | grep Eiffel
+            
+              EIFFEL_ROOT=$(find "$PWD" -type d -name "studio" | head -1 | xargs dirname)
+            
+              if [ -z "$EIFFEL_ROOT" ]; then
+                  echo "Cannot find Eiffel installation"
+                  exit 1
+              fi
+            
+              echo "Found Eiffel at:"
+              echo "$EIFFEL_ROOT"
+            
+              echo "ISE_EIFFEL=$EIFFEL_ROOT" >> $GITHUB_ENV
               echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
-              echo "ISE_LIBRARY=$PWD/${EIFFEL_DIR}/library" >> $GITHUB_ENV
-              echo "$PWD/${EIFFEL_DIR}/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
+              echo "ISE_LIBRARY=$EIFFEL_ROOT/library" >> $GITHUB_ENV
+            
+              echo "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
+            
+              "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
+            
               printf '%s\n' \
-                '<?xml version="1.0" encoding="UTF-8"?>' \
-                '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
-                '  <target name="main">' \
-                '    <root class="MAIN" feature="make"/>' \
-                '    <cluster name="main" location="."/>' \
-                '  </target>' \
-                '</system>' \
-                > default.ecf
+              '<?xml version="1.0" encoding="UTF-8"?>' \
+              '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
+              '  <target name="main">' \
+              '    <root class="MAIN" feature="make"/>' \
+              '    <cluster name="main" location="."/>' \
+              '  </target>' \
+              '</system>' \
+              > default.ecf
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
