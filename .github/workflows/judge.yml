@@ -81,9 +81,20 @@ jobs:
             "D") sudo apt-get install -y gdc ;;
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
-            "INTERCAL")
-              sudo apt-get install -y intercal
-              ick - || true
+            "Whitespace")
+              curl -fL \
+                https://raw.githubusercontent.com/squancy/whitespace-interpreter/main/whitespace.py \
+                -o whitespace_interpreter.py
+            
+              echo '#!/usr/bin/env python3' > whitespace_runner.py
+              echo 'import sys' >> whitespace_runner.py
+              echo 'from whitespace_interpreter import whitespace' >> whitespace_runner.py
+              echo '' >> whitespace_runner.py
+              echo 'with open("main.ws", "r") as f:' >> whitespace_runner.py
+              echo '    code = f.read()' >> whitespace_runner.py
+              echo '' >> whitespace_runner.py
+              echo 'inp = sys.stdin.read()' >> whitespace_runner.py
+              echo 'print(whitespace(code, inp), end="")' >> whitespace_runner.py
               ;;
             "Eiffel")
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
@@ -209,53 +220,48 @@ jobs:
               SKIP_COMMON=1
               ;;
               
-            "INTERCAL")
-              echo "$CODE_RAW" > main.i
+            # "INTERCAL")
+            #   echo "$CODE_RAW" > main.i
           
-              echo "===== Compile INTERCAL ====="
+            #   echo "===== Compile INTERCAL ====="
           
-              if ! ick main.i > intercal.log 2>&1; then
-                  echo "===== INTERCAL compilation failed ====="
-                  cat intercal.log
+            #   if ! ick main.i > intercal.log 2>&1; then
+            #       echo "===== INTERCAL compilation failed ====="
+            #       cat intercal.log
           
-                  ERROR_MSG=$(cat intercal.log | head -c 500 | jq -sR .)
+            #       ERROR_MSG=$(cat intercal.log | head -c 500 | jq -sR .)
           
-                  curl -X POST "$CALLBACK_URL" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+            #       curl -X POST "$CALLBACK_URL" \
+            #         -H "Content-Type: application/json" \
+            #         -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
           
-                  exit 0
-              fi
-          
-          
-              echo "===== INTERCAL files ====="
-              ls -la
+            #       exit 0
+            #   fi
           
           
-              if [ ! -x ./main ]; then
-          
-                  ERROR_MSG=$(echo \
-                  "INTERCAL executable not found" \
-                  | jq -sR .)
-          
-                  curl -X POST "$CALLBACK_URL" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-          
-                  exit 0
-              fi
+            #   echo "===== INTERCAL files ====="
+            #   ls -la
           
           
-              RUN_CMD="./main"
-              SKIP_COMMON=1
-              ;;
-
-            "Fish")
-              EXT="fish"
-              COMPILE=""
-              RUN_CMD="fishr main.fish"
-              ;;
-
+            #   if [ ! -x ./main ]; then
+          
+            #       ERROR_MSG=$(echo \
+            #       "INTERCAL executable not found" \
+            #       | jq -sR .)
+          
+            #       curl -X POST "$CALLBACK_URL" \
+            #         -H "Content-Type: application/json" \
+            #         -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+          
+            #       exit 0
+            #   fi
+          
+          
+            #   RUN_CMD="./main"
+            #   SKIP_COMMON=1
+            #   ;;
+            "Whitespace") EXT="ws"; COMPILE=""; RUN_CMD="python3 whitespace_runner.py" ;;
+            "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
