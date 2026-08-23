@@ -64,6 +64,13 @@ jobs:
             
               fishr --version || true
               ;;
+            "Clojure")
+              sudo apt-get install -y openjdk-17-jdk rlwrap curl
+              curl -L -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
+              chmod +x linux-install.sh
+              sudo ./linux-install.sh
+              clojure --version
+              ;;
             "TeX") sudo apt-get install -y texlive-binaries ;;
             "Fortran") sudo apt-get install -y gfortran ;;
             "Ada") sudo apt-get install -y gnat ;;
@@ -324,6 +331,7 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
+            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure main.clj" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
