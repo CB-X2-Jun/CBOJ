@@ -54,14 +54,10 @@ jobs:
             "Brainfuck") sudo apt-get install -y beef ;;
             "Fish")
               sudo apt-get install -y cargo rustc
-            
               git clone --depth 1 https://github.com/noirotm/fishr.git /tmp/fishr
               cd /tmp/fishr
-            
               cargo build --release
-            
               sudo install -m 755 target/release/fishr /usr/local/bin/fishr
-            
               fishr --version || true
               ;;
             "Clojure")
@@ -129,9 +125,11 @@ jobs:
           TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
           
           # ---------- 内存限制倍率 ----------
+          # 不再使用 ulimit，改为运行后比较 RSS
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=5 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=5 ;;
+            "Clojure") MEM_MULTIPLIER=8 ;;   # Clojure 运行时更重
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
@@ -145,8 +143,7 @@ jobs:
             "Java8")
               export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
               export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 8:"
-              java -version
+              echo "Using Java 8:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
                 ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -167,8 +164,7 @@ jobs:
             "Java11")
               export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
               export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 11:"
-              java -version
+              echo "Using Java 11:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
                 ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -189,8 +185,7 @@ jobs:
             "Java17")
               export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
               export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 17:"
-              java -version
+              echo "Using Java 17:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
                 ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -211,8 +206,7 @@ jobs:
             "Java21")
               export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
               export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 21:"
-              java -version
+              echo "Using Java 21:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
                 ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -235,17 +229,16 @@ jobs:
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT"
+              export ISE_LIBRARY="$EIFFEL_ROOT/library"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
-            
               echo "===== Compile Eiffel ====="
               "$EC" \
                 -batch \
+                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
                 > eiffel.log 2>&1
-            
               if [ $? -ne 0 ]; then
                   echo "===== Eiffel compilation failed ====="
                   cat eiffel.log
@@ -255,21 +248,17 @@ jobs:
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                   exit 0
               fi
-            
               echo "===== Eiffel log ====="
               cat eiffel.log
-            
               EXECUTABLE=$(find EIFGENs \
                   -type f \
                   -name "main" \
                   -perm -111 | head -1)
-            
               if [ -z "$EXECUTABLE" ]; then
                   echo "Executable not found"
                   find EIFGENs -type f | head -50
                   exit 0
               fi
-            
               RUN_CMD="$EXECUTABLE"
               SKIP_COMMON=1
               ;;
@@ -287,7 +276,9 @@ jobs:
               RUN_CMD="ceylon run cboj/1.0.0"
               SKIP_COMMON=1
               ;;
+
             "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
+            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure -M main.clj" ;;
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
@@ -331,11 +322,10 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex -interaction=batchmode main.tex" ;;
             "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
-            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure main.clj" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # ---------- 通用编译（非 Java/Eiffel/Ceylon/Fish） ----------
+          # ---------- 通用编译（非特殊语言） ----------
           if [ -z "$SKIP_COMMON" ]; then
             echo "$CODE_RAW" > "main.$EXT"
             if [[ -n "$COMPILE" ]]; then
@@ -348,7 +338,7 @@ jobs:
             fi
           fi
 
-          # ---------- 测试循环 ----------
+          # ---------- 测试循环（无 ulimit，仅统计 RSS） ----------
           TOTAL_TIME=0
           MAX_MEM=0
           STATUS="accepted"
@@ -362,9 +352,8 @@ jobs:
             MEM_FILE=$(mktemp)
 
             START=$(date +%s%N)
-            (ulimit -v "$REAL_MEM_KB" 2>/dev/null || true
-             echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout "$TIMEOUT_SEC"s bash -c "$RUN_CMD" > "$OUT_FILE" 2> "$ERR_FILE"
-            )
+            # 直接运行，不加 ulimit，只统计 RSS
+            echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout "$TIMEOUT_SEC"s bash -c "$RUN_CMD" > "$OUT_FILE" 2> "$ERR_FILE"
             EXIT_CODE=$?
             END=$(date +%s%N)
 
@@ -372,9 +361,7 @@ jobs:
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
             MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-            if [ -z "$MEM_USED" ]; then
-              MEM_USED=0
-            fi
+            [ -z "$MEM_USED" ] && MEM_USED=0
             [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
 
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
@@ -393,15 +380,12 @@ jobs:
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
 
-            if [ "$EXIT_CODE" -eq 124 ]; then
-              STATUS="time_limit_exceeded"
+            # 状态判断顺序：先判断 MLE（实际内存超过放宽后的限制），再判断 TLE/RE/WA
+            if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
+              STATUS="memory_limit_exceeded"
               break
-            elif [ "$EXIT_CODE" -eq 137 ]; then
-              if [ "$MEM_USED" -ge "$REAL_MEM_KB" ]; then
-                STATUS="memory_limit_exceeded"
-              else
-                STATUS="runtime_error"
-              fi
+            elif [ "$EXIT_CODE" -eq 124 ]; then
+              STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -ne 0 ]; then
               STATUS="runtime_error"
