@@ -137,67 +137,58 @@ jobs:
 
             "Eiffel")
               echo "$CODE_RAW" > main.e
+            
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
+            
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
               export ISE_LIBRARY="$EIFFEL_ROOT/library"
+            
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
             
-              if [ ! -x "$EC" ]; then
-                  echo "Eiffel compiler not found: $EC"
-                  exit 1
-              fi
             
-              echo "Using Eiffel compiler:"
-              "$EC" -version
+              echo "===== Compile Eiffel ====="
             
-              echo "===== Compile Eiffel (ec main.e -root MAIN -finalize -c_compile) ====="
-              # 参数顺序：-root MAIN 放在最前面，确保正确解析
-              if ! "$EC" \
+              "$EC" \
                 -batch \
-                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
-                > eiffel.log 2>&1; then
+                > eiffel.log 2>&1
+            
+            
+              if [ $? -ne 0 ]; then
                   echo "===== Eiffel compilation failed ====="
                   cat eiffel.log
-                  ERROR_MSG=$(cat eiffel.log 2>/dev/null | head -c 500 | jq -sR .)
-                  if [ -z "$ERROR_MSG" ] || [ "$ERROR_MSG" = '""' ]; then
-                      ERROR_MSG="Eiffel compilation failed without error output"
-                  fi
+            
+                  ERROR_MSG=$(cat eiffel.log | head -c 500 | jq -sR .)
+            
                   curl -X POST "$CALLBACK_URL" \
                     -H "Content-Type: application/json" \
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+            
                   exit 0
               fi
+            
             
               echo "===== Eiffel log ====="
               cat eiffel.log
             
-              echo "===== Generated files ====="
-              find EIFGENs -type f -name "main" -perm -111 2>/dev/null | head -20 || echo "No executable named 'main' found"
             
-              # 查找可执行文件：优先找名为 main 且有执行权限的
-              EXECUTABLE=$(find EIFGENs -type f -name "main" -perm -111 | head -1)
-              # 如果没找到，兜底：找任意有执行权限的文件
+              EXECUTABLE=$(find EIFGENs \
+                  -type f \
+                  -name "main" \
+                  -perm -111 | head -1)
+            
+            
               if [ -z "$EXECUTABLE" ]; then
-                  EXECUTABLE=$(find EIFGENs -type f -perm -111 | head -1)
-              fi
-            
-              if [ -n "$EXECUTABLE" ]; then
-                  RUN_CMD="$EXECUTABLE"
-              else
-                  echo "===== No Eiffel executable found ====="
-                  echo "Contents of EIFGENs:"
-                  find EIFGENs -type f 2>/dev/null | head -50 || echo "No EIFGENs directory"
-                  ERROR_MSG="Eiffel compilation succeeded but executable not found"
-                  curl -X POST "$CALLBACK_URL" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                  echo "Executable not found"
+                  find EIFGENs -type f | head -50
                   exit 0
               fi
             
+            
+              RUN_CMD="$EXECUTABLE"
               SKIP_COMMON=1
               ;;
 
