@@ -149,7 +149,7 @@ jobs:
               echo "$CODE_RAW" > main.e
               cp default.ecf main.ecf
             
-              EIFFEL_ROOT="$PWD/Eiffel_25.12"
+              EIFFEL_ROOT="$PWD/eiffelstudio-25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
               export ISE_LIBRARY="$EIFFEL_ROOT/library"
