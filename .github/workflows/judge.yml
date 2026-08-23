@@ -77,10 +77,11 @@ jobs:
               echo "Extracted:"
               find . -maxdepth 3 -type d | grep Eiffel
             
-              EIFFEL_ROOT=$(find "$PWD" -type d -name "studio" | head -1 | xargs dirname)
+              EIFFEL_ROOT="$PWD/Eiffel_25.12"
             
-              if [ -z "$EIFFEL_ROOT" ]; then
-                  echo "Cannot find Eiffel installation"
+              if [ ! -f "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" ]; then
+                  echo "Eiffel compiler missing!"
+                  find "$EIFFEL_ROOT" -name ec -type f
                   exit 1
               fi
             
