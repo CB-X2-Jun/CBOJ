@@ -131,7 +131,7 @@ jobs:
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=9 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=5 ;;
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
