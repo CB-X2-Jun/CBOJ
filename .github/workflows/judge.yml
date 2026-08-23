@@ -53,10 +53,15 @@ jobs:
             "Swift") sudo apt-get install -y swift ;;
             "Brainfuck") sudo apt-get install -y beef ;;
             "Fish")
-              sudo apt-get install -y cargo
-              cargo install fishr
-              echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-              fishr --version
+              sudo apt-get install -y cargo rustc
+            
+              git clone --depth 1 https://github.com/MarcNoirot/fishr.git
+              cd fishr
+              cargo build --release
+            
+              sudo cp target/release/fishr /usr/local/bin/fishr
+            
+              fishr --version || true
               ;;
             "TeX") sudo apt-get install -y texlive-binaries ;;
             "Fortran") sudo apt-get install -y gfortran ;;
@@ -200,9 +205,9 @@ jobs:
               ;;
 
             "Fish")
-              echo "$CODE_RAW" > Main.fish
-              RUN_CMD="fishr Main.fish"
-              SKIP_COMMON=1
+              EXT="fish"
+              COMPILE=""
+              RUN_CMD="fishr main.fish"
               ;;
 
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
