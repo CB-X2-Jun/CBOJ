@@ -70,11 +70,10 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
-              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
-              tar -xjf ${EIFFEL_DIR}.tar.bz2
-              mv Eiffel_25.12 eiffelstudio-25.12
-              EIFFEL_ROOT="$PWD/eiffelstudio-25.12"
+              wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
+              tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
+              # 解压后目录名就是 Eiffel_25.12，不要改名
+              EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
               export ISE_LIBRARY="$EIFFEL_ROOT/library"
@@ -83,16 +82,6 @@ jobs:
               echo "ISE_LIBRARY=$EIFFEL_ROOT/library" >> $GITHUB_ENV
               echo "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
               "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
-              
-              printf '%s\n' \
-              '<?xml version="1.0" encoding="UTF-8"?>' \
-              '<system xmlns="http://www.eiffel.com/developers/xml/configuration" name="main" uuid="123a56b8-12c4-41ca-aaa9-11445b789abc">' \
-              '  <target name="main">' \
-              '    <root class="MAIN" feature="make"/>' \
-              '    <cluster name="main" location="src" recursive="true"/>' \
-              '  </target>' \
-              '</system>' \
-              > default.ecf
               ;;
             "Ceylon")
               sudo apt-get install -y openjdk-8-jdk ant
@@ -147,11 +136,8 @@ jobs:
               ;;
 
             "Eiffel")
-              mkdir -p src
-              echo "$CODE_RAW" > src/main.e
-              cp default.ecf main.ecf
-            
-              EIFFEL_ROOT="$PWD/eiffelstudio-25.12"
+              echo "$CODE_RAW" > main.e
+              EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
               export ISE_LIBRARY="$EIFFEL_ROOT/library"
@@ -165,17 +151,14 @@ jobs:
               echo "Using Eiffel compiler:"
               "$EC" -version
             
-              echo "===== Eiffel environment ====="
-              echo "ISE_EIFFEL=$ISE_EIFFEL"
-              ls -la "$EIFFEL_ROOT/studio/eifinit/general.cfg" || echo "general.cfg not found"
-            
-              echo "===== Compile (finalize -c_compile) ====="
-              # 官方推荐顺序：-finalize -c_compile
+              echo "===== Compile Eiffel (ec main.e -root MAIN -finalize -c_compile) ====="
+              # 参数顺序：-root MAIN 放在最前面，确保正确解析
               if ! "$EC" \
                 -batch \
-                -config main.ecf \
+                -root MAIN \
                 -finalize \
                 -c_compile \
+                main.e \
                 > eiffel.log 2>&1; then
                   echo "===== Eiffel compilation failed ====="
                   cat eiffel.log
@@ -193,13 +176,17 @@ jobs:
               cat eiffel.log
             
               echo "===== Generated files ====="
-              find EIFGENs -type f -executable 2>/dev/null || echo "No executable files found in EIFGENs"
+              find EIFGENs -type f -name "main" -perm -111 2>/dev/null | head -20 || echo "No executable named 'main' found"
             
-              # 查找可执行文件：优先 F_code（finalize），其次 W_code（workbench）
-              if [ -x "$PWD/EIFGENs/main/F_code/main" ]; then
-                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
-              elif [ -x "$PWD/EIFGENs/main/W_code/main" ]; then
-                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
+              # 查找可执行文件：优先找名为 main 且有执行权限的
+              EXECUTABLE=$(find EIFGENs -type f -name "main" -perm -111 | head -1)
+              # 如果没找到，兜底：找任意有执行权限的文件
+              if [ -z "$EXECUTABLE" ]; then
+                  EXECUTABLE=$(find EIFGENs -type f -perm -111 | head -1)
+              fi
+            
+              if [ -n "$EXECUTABLE" ]; then
+                  RUN_CMD="$EXECUTABLE"
               else
                   echo "===== No Eiffel executable found ====="
                   echo "Contents of EIFGENs:"
