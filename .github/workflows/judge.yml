@@ -90,10 +90,10 @@ jobs:
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT/library"
+              export ISE_LIBRARY="$EIFFEL_ROOT"
               echo "ISE_EIFFEL=$EIFFEL_ROOT" >> $GITHUB_ENV
               echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
-              echo "ISE_LIBRARY=$EIFFEL_ROOT/library" >> $GITHUB_ENV
+              echo "ISE_LIBRARY=$EIFFEL_ROOT" >> $GITHUB_ENV
               echo "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
               "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
               ;;
@@ -122,20 +122,34 @@ jobs:
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           CODE_RAW=$(echo "$CODE" | jq -r '.')
-          TIMEOUT_SEC=$(python3 -c "print(max($TIME_LIMIT/1000, 0.1))")
           
           # ---------- 内存限制倍率 ----------
-          # 不再使用 ulimit，改为运行后比较 RSS
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
             "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=5 ;;
-            "Clojure") MEM_MULTIPLIER=8 ;;   # Clojure 运行时更重
+            "Clojure") MEM_MULTIPLIER=8 ;;
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
           
           ORIGINAL_MEM_KB=$((MEMORY_LIMIT * 1024))
           REAL_MEM_KB=$((ORIGINAL_MEM_KB * MEM_MULTIPLIER))
+
+          # ---------- 时间限制倍率（硬保护） ----------
+          case "$LANG" in
+            "C"|"C++"*) TIME_MULTIPLIER=1.2 ;;
+            "Python"*|"PyPy"*) TIME_MULTIPLIER=1.2 ;;
+            "Java"*|"Kotlin JVM"|"Scala") TIME_MULTIPLIER=2.0 ;;
+            "Clojure") TIME_MULTIPLIER=5.0 ;;
+            "Erlang") TIME_MULTIPLIER=2.5 ;;
+            "Julia") TIME_MULTIPLIER=3.0 ;;
+            "Haskell"|"Swift") TIME_MULTIPLIER=1.5 ;;
+            *) TIME_MULTIPLIER=1.2 ;;
+          esac
+          HARD_TIMEOUT_MS=$(python3 -c "print(int($TIME_LIMIT * $TIME_MULTIPLIER))")
+          if [ $HARD_TIMEOUT_MS -lt 500 ]; then
+            HARD_TIMEOUT_MS=500
+          fi
 
           # ---------- 语言特定处理 ----------
           case "$LANG" in
@@ -234,6 +248,7 @@ jobs:
               echo "===== Compile Eiffel ====="
               "$EC" \
                 -batch \
+                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
@@ -337,7 +352,7 @@ jobs:
             fi
           fi
 
-          # ---------- 测试循环（无 ulimit，仅统计 RSS） ----------
+          # ---------- 测试循环（一次运行，无二次执行） ----------
           TOTAL_TIME=0
           MAX_MEM=0
           STATUS="accepted"
@@ -350,27 +365,59 @@ jobs:
             ERR_FILE=$(mktemp)
             MEM_FILE=$(mktemp)
 
+            # 直接启动 setsid 进程，$! 直接对应 session leader
             START=$(date +%s%N)
-            # 直接运行，不加 ulimit，只统计 RSS
-            echo "$INPUT" | /usr/bin/time -f "%M" -o "$MEM_FILE" timeout "$TIMEOUT_SEC"s bash -c "$RUN_CMD" > "$OUT_FILE" 2> "$ERR_FILE"
+
+            setsid bash -c "
+              echo '$INPUT' | /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD
+            " > "$OUT_FILE" 2> "$ERR_FILE" &
+            PID=$!
+
+            KILLED=0
+
+            # 轮询监控
+            while kill -0 $PID 2>/dev/null; do
+              NOW=$(date +%s%N)
+              ELAPSED=$(( (NOW - START) / 1000000 ))
+              if [ $ELAPSED -gt $HARD_TIMEOUT_MS ]; then
+                # 杀整个进程组
+                PGID=$(ps -o pgid= -p $PID 2>/dev/null | tr -d ' ')
+                if [ -n "$PGID" ]; then
+                  kill -TERM -$PGID 2>/dev/null
+                  sleep 0.1
+                  kill -KILL -$PGID 2>/dev/null
+                else
+                  kill -TERM $PID 2>/dev/null
+                  sleep 0.1
+                  kill -KILL $PID 2>/dev/null
+                fi
+                KILLED=1
+                break
+              fi
+              sleep 0.01
+            done
+
+            wait $PID 2>/dev/null
             EXIT_CODE=$?
             END=$(date +%s%N)
-
-            TIME_USED=$((($END - $START) / 1000000))
+            TIME_USED=$(( (END - START) / 1000000 ))
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
+            # 读取内存统计
             MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
             [ -z "$MEM_USED" ] && MEM_USED=0
             [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
 
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
-            
+
             echo "========== DEBUG =========="
             echo "EXIT_CODE=$EXIT_CODE"
+            echo "TIME_USED=${TIME_USED}ms"
             echo "MEM_USED=${MEM_USED}KB"
             echo "ORIGINAL_MEM_LIMIT=${ORIGINAL_MEM_KB}KB"
             echo "REAL_MEM_LIMIT=${REAL_MEM_KB}KB"
+            echo "KILLED=$KILLED"
             echo "STDOUT:"
             cat "$OUT_FILE" 2>/dev/null || true
             echo "STDERR:"
@@ -379,11 +426,11 @@ jobs:
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
 
-            # 状态判断顺序：先判断 MLE（实际内存超过放宽后的限制），再判断 TLE/RE/WA
+            # 状态判断顺序：MLE -> TLE（含 KILLED） -> RE -> WA
             if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
               STATUS="memory_limit_exceeded"
               break
-            elif [ "$EXIT_CODE" -eq 124 ]; then
+            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$TIME_LIMIT" ]; then
               STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -ne 0 ]; then
