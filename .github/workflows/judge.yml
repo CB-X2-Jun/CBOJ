@@ -70,7 +70,7 @@ jobs:
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
             "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
-              EIFFEL_DIR="Eiffel_25.12_rev_98922-linux-x86-64"
+              EIFFEL_DIR="Eiffel_25.12"
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/${EIFFEL_DIR}.tar.bz2
               tar -xjf ${EIFFEL_DIR}.tar.bz2
               EIFFEL_ROOT="$PWD/${EIFFEL_DIR}"
