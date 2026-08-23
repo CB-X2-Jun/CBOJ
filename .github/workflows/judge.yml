@@ -145,7 +145,7 @@ jobs:
               echo "$CODE_RAW" > main.e
               cp default.ecf main.ecf
             
-              EIFFEL_ROOT="$PWD/Eiffel_25.12_rev_98922-linux-x86-64"
+              EIFFEL_ROOT="$PWD/Eiffel_25.12"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
               FINISH="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/finish_freezing"
             
