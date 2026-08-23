@@ -55,11 +55,12 @@ jobs:
             "Fish")
               sudo apt-get install -y cargo rustc
             
-              git clone --depth 1 https://github.com/MarcNoirot/fishr.git
-              cd fishr
+              git clone --depth 1 https://github.com/noirotm/fishr.git /tmp/fishr
+              cd /tmp/fishr
+            
               cargo build --release
             
-              sudo cp target/release/fishr /usr/local/bin/fishr
+              sudo install -m 755 target/release/fishr /usr/local/bin/fishr
             
               fishr --version || true
               ;;
