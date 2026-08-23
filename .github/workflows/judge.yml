@@ -149,12 +149,11 @@ jobs:
               echo "$CODE_RAW" > main.e
               cp default.ecf main.ecf
             
-              EIFFEL_ROOT="$PWD/eiffelstudio-25.12"
+              EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
               export ISE_LIBRARY="$EIFFEL_ROOT/library"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
-              FINISH="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/finish_freezing"
             
               if [ ! -x "$EC" ]; then
                   echo "Eiffel compiler not found: $EC"
@@ -164,22 +163,20 @@ jobs:
               echo "Using Eiffel compiler:"
               "$EC" -version
             
-              # 编译（包含 -finalize，生成 F_code 或 W_code）
-              "$EC" -batch -config main.ecf -c_compile -finalize > eiffel.log 2>&1 || true
+              echo "===== Eiffel environment ====="
+              echo "ISE_EIFFEL=$ISE_EIFFEL"
+              ls -la "$EIFFEL_ROOT/studio/eifinit/general.cfg" || echo "general.cfg not found"
             
-              # finalize
-              if [ -x "$FINISH" ]; then
-                  "$FINISH" >> eiffel.log 2>&1 || true
-              fi
-            
-              # 检查可执行文件（使用 -f，然后 chmod +x）
-              if [ -f "$PWD/EIFGENs/main/W_code/main" ]; then
-                  chmod +x "$PWD/EIFGENs/main/W_code/main"
-                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
-              elif [ -f "$PWD/EIFGENs/main/F_code/main" ]; then
-                  chmod +x "$PWD/EIFGENs/main/F_code/main"
-                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
-              else
+              echo "===== Compile (finalize -c_compile) ====="
+              # 官方推荐顺序：-finalize -c_compile
+              if ! "$EC" \
+                -batch \
+                -config main.ecf \
+                -finalize \
+                -c_compile \
+                > eiffel.log 2>&1; then
+                  echo "===== Eiffel compilation failed ====="
+                  cat eiffel.log
                   ERROR_MSG=$(cat eiffel.log 2>/dev/null | head -c 500 | jq -sR .)
                   if [ -z "$ERROR_MSG" ] || [ "$ERROR_MSG" = '""' ]; then
                       ERROR_MSG="Eiffel compilation failed without error output"
@@ -187,6 +184,28 @@ jobs:
                   curl -X POST "$CALLBACK_URL" \
                     -H "Content-Type: application/json" \
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                  exit 0
+              fi
+            
+              echo "===== Eiffel log ====="
+              cat eiffel.log
+            
+              echo "===== Generated files ====="
+              find EIFGENs -type f -executable 2>/dev/null || echo "No executable files found in EIFGENs"
+            
+              # 查找可执行文件：优先 F_code（finalize），其次 W_code（workbench）
+              if [ -x "$PWD/EIFGENs/main/F_code/main" ]; then
+                  RUN_CMD="$PWD/EIFGENs/main/F_code/main"
+              elif [ -x "$PWD/EIFGENs/main/W_code/main" ]; then
+                  RUN_CMD="$PWD/EIFGENs/main/W_code/main"
+              else
+                  echo "===== No Eiffel executable found ====="
+                  echo "Contents of EIFGENs:"
+                  find EIFGENs -type f 2>/dev/null | head -50 || echo "No EIFGENs directory"
+                  ERROR_MSG="Eiffel compilation succeeded but executable not found"
+                  curl -X POST "$CALLBACK_URL" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                   exit 0
               fi
             
