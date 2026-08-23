@@ -124,7 +124,7 @@ jobs:
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=4 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=5 ;;
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
@@ -134,7 +134,12 @@ jobs:
 
           # ---------- 语言特定处理 ----------
           case "$LANG" in
-            "Java8"|"Java11"|"Java17"|"Java21")
+            # ---------- Java 各版本显式指定 JAVA_HOME ----------
+            "Java8")
+              export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+              export PATH="$JAVA_HOME/bin:$PATH"
+              echo "Using Java 8:"
+              java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
                 ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
@@ -142,7 +147,79 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
               fi
-              RUN_CMD="java Main"
+              if [ ! -f Main.class ]; then
+                ERROR_MSG="Compilation succeeded but Main.class not found"
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                exit 0
+              fi
+              RUN_CMD="java -cp . Main"
+              SKIP_COMMON=1
+              ;;
+
+            "Java11")
+              export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+              export PATH="$JAVA_HOME/bin:$PATH"
+              echo "Using Java 11:"
+              java -version
+              echo "$CODE_RAW" > Main.java
+              if ! javac Main.java 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              if [ ! -f Main.class ]; then
+                ERROR_MSG="Compilation succeeded but Main.class not found"
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                exit 0
+              fi
+              RUN_CMD="java -cp . Main"
+              SKIP_COMMON=1
+              ;;
+
+            "Java17")
+              export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+              export PATH="$JAVA_HOME/bin:$PATH"
+              echo "Using Java 17:"
+              java -version
+              echo "$CODE_RAW" > Main.java
+              if ! javac Main.java 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              if [ ! -f Main.class ]; then
+                ERROR_MSG="Compilation succeeded but Main.class not found"
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                exit 0
+              fi
+              RUN_CMD="java -cp . Main"
+              SKIP_COMMON=1
+              ;;
+
+            "Java21")
+              export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+              export PATH="$JAVA_HOME/bin:$PATH"
+              echo "Using Java 21:"
+              java -version
+              echo "$CODE_RAW" > Main.java
+              if ! javac Main.java 2> compile_error.log; then
+                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              if [ ! -f Main.class ]; then
+                ERROR_MSG="Compilation succeeded but Main.class not found"
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
+                exit 0
+              fi
+              RUN_CMD="java -cp . Main"
               SKIP_COMMON=1
               ;;
 
