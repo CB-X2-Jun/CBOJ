@@ -52,6 +52,12 @@ jobs:
               ;;
             "Swift") sudo apt-get install -y swift ;;
             "Brainfuck") sudo apt-get install -y beef ;;
+            "Fish")
+              sudo apt-get install -y cargo
+              cargo install fishr
+              echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+              fishr --version
+              ;;
             "TeX") sudo apt-get install -y texlive-binaries ;;
             "Fortran") sudo apt-get install -y gfortran ;;
             "Ada") sudo apt-get install -y gnat ;;
@@ -72,7 +78,6 @@ jobs:
             "Eiffel")
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
               tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
-              # 解压后目录名就是 Eiffel_25.12，不要改名
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
@@ -137,56 +142,44 @@ jobs:
 
             "Eiffel")
               echo "$CODE_RAW" > main.e
-            
               EIFFEL_ROOT="$PWD/Eiffel_25.12"
-            
               export ISE_EIFFEL="$EIFFEL_ROOT"
               export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT"
-            
+              export ISE_LIBRARY="$EIFFEL_ROOT/library"
               EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
             
-            
               echo "===== Compile Eiffel ====="
-            
               "$EC" \
                 -batch \
+                -root MAIN \
                 -finalize \
                 -c_compile \
                 main.e \
                 > eiffel.log 2>&1
             
-            
               if [ $? -ne 0 ]; then
                   echo "===== Eiffel compilation failed ====="
                   cat eiffel.log
-            
                   ERROR_MSG=$(cat eiffel.log | head -c 500 | jq -sR .)
-            
                   curl -X POST "$CALLBACK_URL" \
                     -H "Content-Type: application/json" \
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-            
                   exit 0
               fi
             
-            
               echo "===== Eiffel log ====="
               cat eiffel.log
-            
             
               EXECUTABLE=$(find EIFGENs \
                   -type f \
                   -name "main" \
                   -perm -111 | head -1)
             
-            
               if [ -z "$EXECUTABLE" ]; then
                   echo "Executable not found"
                   find EIFGENs -type f | head -50
                   exit 0
               fi
-            
             
               RUN_CMD="$EXECUTABLE"
               SKIP_COMMON=1
@@ -203,6 +196,12 @@ jobs:
                 exit 0
               fi
               RUN_CMD="ceylon run cboj/1.0.0"
+              SKIP_COMMON=1
+              ;;
+
+            "Fish")
+              echo "$CODE_RAW" > Main.fish
+              RUN_CMD="fishr Main.fish"
               SKIP_COMMON=1
               ;;
 
@@ -252,7 +251,7 @@ jobs:
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
-          # ---------- 通用编译（非 Java/Eiffel/Ceylon） ----------
+          # ---------- 通用编译（非 Java/Eiffel/Ceylon/Fish） ----------
           if [ -z "$SKIP_COMMON" ]; then
             echo "$CODE_RAW" > "main.$EXT"
             if [[ -n "$COMPILE" ]]; then
