@@ -344,7 +344,7 @@ jobs:
             "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
             "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN_CMD="./program" ;;
             "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
-            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="bwbasic main.bas" ;;
+            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="bwbasic -q main.bas" ;;
             "Prolog") EXT="pl"; COMPILE=""; RUN_CMD="swipl -q -t main -s main.pl" ;;
             "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN_CMD="sbcl --script main.lisp" ;;
             "Tcl") EXT="tcl"; COMPILE=""; RUN_CMD="tclsh main.tcl" ;;
