@@ -56,9 +56,9 @@ export async function login(username, password) {
 export function logout() { removeToken(); }
 
 // 题目
-export async function getProblems() {
-  return apiFetch('/problems');
-}
+// export async function getProblems() {
+//   return apiFetch('/problems');
+// }
 export async function getProblem(id) {
   return apiFetch(`/problem/${id}`);
 }
