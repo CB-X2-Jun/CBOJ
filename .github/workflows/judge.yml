@@ -72,8 +72,12 @@ jobs:
             "Ada") sudo apt-get install -y gnat ;;
             "Pascal") sudo apt-get install -y fpc ;;
             "BASIC_QB"|"BASIC_FB")
+              # 安装依赖
               sudo apt-get install -y gcc libncurses-dev libffi-dev
-              sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+              # 下载并安装 libtinfo5（从 Ubuntu 22.04 源获取）
+              wget -q http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
+              sudo dpkg -i libtinfo5_6.3-2ubuntu0.1_amd64.deb || sudo apt-get install -f -y
+              # 下载并安装 FreeBASIC
               wget -q http://downloads.sourceforge.net/fbc/FreeBASIC-1.10.1-linux-x86_64.tar.xz?download -O FreeBASIC-1.10.1-linux-x86_64.tar.xz
               tar -xJf FreeBASIC-1.10.1-linux-x86_64.tar.xz
               cd FreeBASIC-1.10.1-linux-x86_64
