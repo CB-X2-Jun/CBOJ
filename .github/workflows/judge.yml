@@ -126,8 +126,7 @@ jobs:
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala") MEM_MULTIPLIER=5 ;;
-            "Clojure") MEM_MULTIPLIER=8 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=8 ;;
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
@@ -171,7 +170,7 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                 exit 0
               fi
-              RUN_CMD="java -cp . Main"
+              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
               SKIP_COMMON=1
               ;;
 
@@ -192,7 +191,7 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                 exit 0
               fi
-              RUN_CMD="java -cp . Main"
+              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
               SKIP_COMMON=1
               ;;
 
@@ -213,7 +212,7 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                 exit 0
               fi
-              RUN_CMD="java -cp . Main"
+              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
               SKIP_COMMON=1
               ;;
 
@@ -234,7 +233,7 @@ jobs:
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
                 exit 0
               fi
-              RUN_CMD="java -cp . Main"
+              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
               SKIP_COMMON=1
               ;;
 
@@ -291,7 +290,7 @@ jobs:
               ;;
 
             "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
-            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure -M main.clj" ;;
+            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure -J-Xmx${REAL_MEM_KB}k -M main.clj" ;;
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
             "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
             "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
@@ -328,7 +327,7 @@ jobs:
             "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN_CMD="erl -noshell -s main start -s init stop" ;;
             "OCaml") EXT="ml"; COMPILE="ocamlopt -o program main.ml"; RUN_CMD="./program" ;;
             "Scala") EXT="scala"; COMPILE="scalac main.scala"; RUN_CMD="scala Main" ;;
-            "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN_CMD="java -jar program.jar" ;;
+            "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN_CMD="java -Xmx${REAL_MEM_KB}k -jar program.jar" ;;
             "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN_CMD="./program" ;;
             "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN_CMD="./program" ;;
             "Dart") EXT="dart"; COMPILE=""; RUN_CMD="dart run main.dart" ;;
@@ -351,7 +350,7 @@ jobs:
             fi
           fi
 
-          # ---------- 测试循环（一次运行，无二次执行） ----------
+          # ---------- 测试循环（使用进程组监控，沙箱限制仅针对用户程序） ----------
           TOTAL_TIME=0
           MAX_MEM=0
           STATUS="accepted"
@@ -363,33 +362,38 @@ jobs:
             OUT_FILE=$(mktemp)
             ERR_FILE=$(mktemp)
             MEM_FILE=$(mktemp)
+            INPUT_FILE=$(mktemp)
+            echo "$INPUT" > "$INPUT_FILE"
 
-            # 直接启动 setsid 进程，$! 直接对应 session leader
             START=$(date +%s%N)
 
+            # 在 setsid 内部设置沙箱限制，不影响外层 judge shell
             setsid bash -c "
-              echo '$INPUT' | /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD
+              ulimit -f 102400  # 文件大小限制 100MB
+              ulimit -u 128     # 最大进程数 128
+              ulimit -c 0       # 禁止生成 core dump
+              # 不设 ulimit -v，避免破坏 JVM/Clojure 等
+              /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
             " > "$OUT_FILE" 2> "$ERR_FILE" &
             PID=$!
 
+            # 获取进程组 ID
+            sleep 0.05
+            PGID=$(ps -o pgid= -p $PID 2>/dev/null | tr -d ' ')
+            if [ -z "$PGID" ]; then
+              PGID=$PID
+            fi
+
             KILLED=0
 
-            # 轮询监控
-            while kill -0 $PID 2>/dev/null; do
+            # 监控整个进程组
+            while kill -0 -$PGID 2>/dev/null; do
               NOW=$(date +%s%N)
               ELAPSED=$(( (NOW - START) / 1000000 ))
               if [ $ELAPSED -gt $HARD_TIMEOUT_MS ]; then
-                # 杀整个进程组
-                PGID=$(ps -o pgid= -p $PID 2>/dev/null | tr -d ' ')
-                if [ -n "$PGID" ]; then
-                  kill -TERM -$PGID 2>/dev/null
-                  sleep 0.1
-                  kill -KILL -$PGID 2>/dev/null
-                else
-                  kill -TERM $PID 2>/dev/null
-                  sleep 0.1
-                  kill -KILL $PID 2>/dev/null
-                fi
+                kill -- -$PGID 2>/dev/null
+                sleep 0.1
+                kill -- -$PGID 2>/dev/null
                 KILLED=1
                 break
               fi
@@ -402,9 +406,11 @@ jobs:
             TIME_USED=$(( (END - START) / 1000000 ))
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
-            # 读取内存统计
             MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-            [ -z "$MEM_USED" ] && MEM_USED=0
+            if [ -z "$MEM_USED" ]; then
+              echo "WARNING: memory statistic unavailable"
+              MEM_USED=0
+            fi
             [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
 
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
@@ -417,19 +423,23 @@ jobs:
             echo "ORIGINAL_MEM_LIMIT=${ORIGINAL_MEM_KB}KB"
             echo "REAL_MEM_LIMIT=${REAL_MEM_KB}KB"
             echo "KILLED=$KILLED"
+            echo "PGID=$PGID"
             echo "STDOUT:"
             cat "$OUT_FILE" 2>/dev/null || true
             echo "STDERR:"
             cat "$ERR_FILE" 2>/dev/null || true
             echo "=========================="
 
-            rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE"
+            rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE" "$INPUT_FILE"
 
-            # 状态判断顺序：MLE -> TLE（含 KILLED） -> RE -> WA
+            # 状态判断：MLE（含 137）、TLE、RE、WA
             if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
               STATUS="memory_limit_exceeded"
               break
-            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$TIME_LIMIT" ]; then
+            elif [ "$EXIT_CODE" -eq 137 ] && [ "$KILLED" -eq 0 ]; then
+              STATUS="memory_limit_exceeded"
+              break
+            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$HARD_TIMEOUT_MS" ]; then
               STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -ne 0 ]; then
