@@ -474,16 +474,18 @@ jobs:
           # 构建测试点详情 JSON 数组
           DETAILS_JSON=$(printf '%s\n' "${TEST_DETAILS[@]}" | jq -s '.')
 
+          # 将 MAX_MEM 从 KB 转换为 MB，保留两位小数
+          MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
+
           # 构建回调数据（包含每个测试点的详情）
           CALLBACK_DATA=$(jq -n \
             --arg rid "$RID" \
             --arg status "$STATUS" \
             --arg time_used "$TOTAL_TIME" \
-            --arg memory_used "$MAX_MEM" \
+            --arg memory_used "$MAX_MEM_MB" \
             --argjson details "$DETAILS_JSON" \
             --arg total_score "$TOTAL_SCORE" \
             '{rid: ($rid | tonumber), status: $status, time_used: ($time_used | tonumber), memory_used: ($memory_used | tonumber), details: $details, total_score: ($total_score | tonumber)}')
-
           echo "Callback data: $CALLBACK_DATA"
 
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" -d "$CALLBACK_DATA" || true
