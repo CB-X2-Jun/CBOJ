@@ -71,7 +71,11 @@ jobs:
             "Fortran") sudo apt-get install -y gfortran ;;
             "Ada") sudo apt-get install -y gnat ;;
             "Pascal") sudo apt-get install -y fpc ;;
-            "BASIC") sudo apt-get install -y bwbasic ;;
+            "BASIC_QB"|"BASIC_FB")
+              sudo add-apt-repository -y ppa:freebasic/freebasic
+              sudo apt-get update
+              sudo apt-get install -y freebasic
+              ;;
             "Prolog") sudo apt-get install -y swi-prolog ;;
             "Lisp"|"Common Lisp") sudo apt-get install -y sbcl ;;
             "Tcl") sudo apt-get install -y tcl ;;
@@ -344,7 +348,16 @@ jobs:
             "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
             "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN_CMD="./program" ;;
             "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
-            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="bwbasic -q main.bas" ;;
+            "BASIC_QB")
+              EXT="bas"
+              COMPILE="fbc -lang qb main.bas -x program"
+              RUN_CMD="./program"
+              ;;
+            "BASIC_FB")
+              EXT="bas"
+              COMPILE="fbc -lang fb main.bas -x program"
+              RUN_CMD="./program"
+              ;;
             "Prolog") EXT="pl"; COMPILE=""; RUN_CMD="swipl -q -t main -s main.pl" ;;
             "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN_CMD="sbcl --script main.lisp" ;;
             "Tcl") EXT="tcl"; COMPILE=""; RUN_CMD="tclsh main.tcl" ;;
