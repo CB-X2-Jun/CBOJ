@@ -19,6 +19,14 @@
         <input type="text" id="title" required>
       </div>
       <div class="form-group">
+        <label>难度</label>
+        <input type="text" id="difficulty" placeholder="入门、普及、提高、省选..." value="入门">
+      </div>
+      <div class="form-group">
+        <label>总分</label>
+        <input type="number" id="total_score" value="100" min="1">
+      </div>
+      <div class="form-group">
         <label>题面（支持 Markdown，与公式）</label>
         <textarea id="description" rows="6" required></textarea>
       </div>
@@ -42,18 +50,14 @@
   <script type="module">
     import { getProblem, createProblem, updateProblem, getUserInfo } from '/js/api.js';
 
-    // ✅ 1. 先获取用户信息（必须在导航栏渲染之前）
     const user = getUserInfo();
-
-    // ✅ 2. 检查管理员权限
     if (!user || !user.isAdmin) {
       location.href = '/index.html';
     }
 
-    // ✅ 3. 渲染导航栏（此时 user 已定义）
     const nav = document.getElementById('navbar');
     nav.innerHTML = `
-      <div class="logo"><span>C</span>BOJ</div>
+      <div class="logo"><span>CB</span>OJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
@@ -68,7 +72,6 @@
       </div>
     `;
 
-    // ✅ 4. 处理编辑/新建逻辑
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const isEdit = !!id;
@@ -81,10 +84,11 @@
           document.getElementById('id').value = problem.id;
           document.getElementById('id').readOnly = true;
           document.getElementById('title').value = problem.title;
+          document.getElementById('difficulty').value = problem.difficulty || '入门';
+          document.getElementById('total_score').value = problem.total_score || 100;
           document.getElementById('description').value = problem.description;
           document.getElementById('time_limit').value = problem.time_limit;
           document.getElementById('memory_limit').value = problem.memory_limit;
-          // 美化 JSON 显示
           try {
             const testCases = JSON.parse(problem.test_cases);
             document.getElementById('test_cases').value = JSON.stringify(testCases, null, 2);
@@ -97,19 +101,19 @@
       }
     }
 
-    // ✅ 5. 提交表单
     document.getElementById('problem-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       document.getElementById('error').textContent = '';
 
       const id = document.getElementById('id').value.trim();
       const title = document.getElementById('title').value.trim();
+      const difficulty = document.getElementById('difficulty').value.trim() || '入门';
+      const total_score = parseInt(document.getElementById('total_score').value) || 100;
       const description = document.getElementById('description').value.trim();
       const time_limit = parseInt(document.getElementById('time_limit').value);
       const memory_limit = parseInt(document.getElementById('memory_limit').value);
       let test_cases;
 
-      // ✅ 校验 + 解析 JSON
       try {
         test_cases = JSON.parse(document.getElementById('test_cases').value);
         if (!Array.isArray(test_cases) || test_cases.length === 0) {
@@ -125,7 +129,7 @@
         return;
       }
 
-      const data = { id, title, description, time_limit, memory_limit, test_cases };
+      const data = { id, title, description, time_limit, memory_limit, test_cases, difficulty, total_score };
 
       try {
         if (isEdit) {
