@@ -12,6 +12,37 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
   <!-- Marked.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+
+  <!-- CodeMirror 6 import map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1",
+        "@codemirror/view": "https://esm.sh/@codemirror/view@6.28.0",
+        "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.6.1",
+        "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.1",
+        "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.16.0",
+        "@codemirror/lint": "https://esm.sh/@codemirror/lint@6.8.0",
+        "@codemirror/search": "https://esm.sh/@codemirror/search@6.5.6",
+        "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2",
+        "@codemirror/lang-cpp": "https://esm.sh/@codemirror/lang-cpp@6.0.2",
+        "@codemirror/lang-java": "https://esm.sh/@codemirror/lang-java@6.0.1",
+        "@codemirror/lang-javascript": "https://esm.sh/@codemirror/lang-javascript@6.2.2",
+        "@codemirror/lang-python": "https://esm.sh/@codemirror/lang-python@6.1.6",
+        "@codemirror/lang-rust": "https://esm.sh/@codemirror/lang-rust@6.0.1",
+        "@codemirror/lang-php": "https://esm.sh/@codemirror/lang-php@6.0.1",
+        "@codemirror/lang-sql": "https://esm.sh/@codemirror/lang-sql@6.6.0",
+        "@codemirror/lang-go": "https://esm.sh/@codemirror/lang-go@6.0.1",
+        "@codemirror/lang-ruby": "https://esm.sh/@codemirror/lang-ruby@6.0.0",
+        "@codemirror/lang-swift": "https://esm.sh/@codemirror/lang-swift@6.0.0",
+        "@codemirror/lang-lua": "https://esm.sh/@codemirror/lang-lua@6.0.0",
+        "@codemirror/lang-perl": "https://esm.sh/@codemirror/lang-perl@6.0.0",
+        "@codemirror/lang-shell": "https://esm.sh/@codemirror/lang-shell@6.0.0",
+        "@codemirror/legacy-modes": "https://esm.sh/@codemirror/legacy-modes@6.3.4",
+        "codemirror": "https://esm.sh/codemirror@6.0.1"
+      }
+    }
+  </script>
 </head>
 <body>
   <nav id="navbar"></nav>
@@ -19,81 +50,113 @@
     <div id="problem-content"></div>
     <div class="card" style="margin-top: 2rem;">
       <h3>📤 提交代码</h3>
-      <form id="submit-form">
-        <div class="form-group">
-         <label>语言</label>
-<select id="language">
-  <option value="Ada">Ada (GNAT 14.2.0)</option>
-  <option value="Bash">Bash 5.2.32</option>
-  <option value="BASIC">BASIC (Yabasic 2.90.3)</option>
-  <option value="Brainfuck">Brainfuck (beef 1.0.0)</option>
-  <option value="C">C (gcc 14.2.0)</option>
-  <option value="C#">C# (Mono 6.12.0.200)</option>
-  <option value="C++98">C++98 (g++ 14.2.0)</option>
-  <option value="C++03">C++03 (g++ 14.2.0)</option>
-  <option value="C++11">C++11 (g++ 14.2.0)</option>
-  <option value="C++14">C++14 (g++ 14.2.0)</option>
-  <option value="C++17" selected>C++17 (g++ 14.2.0)</option>
-  <option value="C++20">C++20 (g++ 14.2.0)</option>
-  <option value="C++23">C++23 (g++ 14.2.0)</option>
-  <option value="C++26">C++26 (g++ 14.2.0, 实验性)</option>
-  <option value="Ceylon">Ceylon (_old/1.3.3)</option>
-  <option value="Clojure">Clojure 1.12.5</option>
-  <option value="Common Lisp">Common Lisp (SBCL 2.4.5)</option>
-  <option value="D">D (GDC 14.2.0)</option>
-  <option value="Dart">Dart 3.5.4</option>
-  <option value="Eiffel">Eiffel (Eiffel Studio 25.12)</option>
-  <option value="Erlang">Erlang 27.1</option>
-  <option value="F#">F# (F# 4.7 / Mono)</option>
-  <option value="Fish">Fish ><> (fishr 0.1.0)</option>
-  <option value="Fortran">Fortran (gfortran 14.2.0)</option>
-  <option value="Go">Go 1.23.2</option>
-  <option value="Haskell">Haskell (GHC 9.6.6)</option>
-  <option value="Java8">Java 8 (OpenJDK 1.8.0_422)</option>
-  <option value="Java11">Java 11 (OpenJDK 11.0.24)</option>
-  <option value="Java17">Java 17 (OpenJDK 17.0.12)</option>
-  <option value="Java21">Java 21 (OpenJDK 21.0.4)</option>
-  <option value="Javascript">JavaScript (Node.js 20.18.0)</option>
-  <option value="Julia">Julia 1.10.5</option>
-  <option value="Kotlin JVM">Kotlin JVM 2.0.20</option>
-  <option value="Lisp">Lisp (SBCL 2.4.5)</option>
-  <option value="Logo">Logo (UCBLogo 6.2.5)</option>
-  <option value="Lua">Lua 5.4.6</option>
-  <option value="Objective-C">Objective-C (Clang 18.1.8)</option>
-  <option value="Objective-C++">Objective-C++ (Clang 18.1.8)</option>
-  <option value="OCaml">OCaml 4.14.2</option>
-  <option value="Pascal">Pascal (Free Pascal 3.2.2)</option>
-  <option value="Perl">Perl 5.38.2</option>
-  <option value="PHP">PHP 8.3.13</option>
-  <option value="Prolog">Prolog (SWI-Prolog 9.2.6)</option>
-  <option value="PyPy3">PyPy 7.3.16 (Python 3.10)</option>
-  <option value="Python3">Python 3.12.6</option>
-  <option value="Ruby">Ruby 3.2.6</option>
-  <option value="Rust">Rust 1.82.0</option>
-  <option value="Scala">Scala 3.5.0</option>
-  <option value="Swift">Swift 6.0.2</option>
-  <option value="Tcl">Tcl 8.6.14</option>
-  <option value="Typescript">TypeScript 5.6.3</option>
-</select>
+      <!-- 工具栏 -->
+      <div style="display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <label for="language" style="font-weight: 600;">语言</label>
+          <select id="language" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="Ada">Ada (GNAT 14.2.0)</option>
+            <option value="Bash">Bash 5.2.32</option>
+            <option value="BASIC">BASIC (Yabasic 2.90.3)</option>
+            <option value="Brainfuck">Brainfuck (beef 1.0.0)</option>
+            <option value="C">C (gcc 14.2.0)</option>
+            <option value="C#">C# (Mono 6.12.0.200)</option>
+            <option value="C++98">C++98 (g++ 14.2.0)</option>
+            <option value="C++03">C++03 (g++ 14.2.0)</option>
+            <option value="C++11">C++11 (g++ 14.2.0)</option>
+            <option value="C++14">C++14 (g++ 14.2.0)</option>
+            <option value="C++17" selected>C++17 (g++ 14.2.0)</option>
+            <option value="C++20">C++20 (g++ 14.2.0)</option>
+            <option value="C++23">C++23 (g++ 14.2.0)</option>
+            <option value="C++26">C++26 (g++ 14.2.0, 实验性)</option>
+            <option value="Ceylon">Ceylon (_old/1.3.3)</option>
+            <option value="Clojure">Clojure 1.12.5</option>
+            <option value="Common Lisp">Common Lisp (SBCL 2.4.5)</option>
+            <option value="D">D (GDC 14.2.0)</option>
+            <option value="Dart">Dart 3.5.4</option>
+            <option value="Eiffel">Eiffel (Eiffel Studio 25.12)</option>
+            <option value="Erlang">Erlang 27.1</option>
+            <option value="F#">F# (F# 4.7 / Mono)</option>
+            <option value="Fish">Fish ><> (fishr 0.1.0)</option>
+            <option value="Fortran">Fortran (gfortran 14.2.0)</option>
+            <option value="Go">Go 1.23.2</option>
+            <option value="Haskell">Haskell (GHC 9.6.6)</option>
+            <option value="Java8">Java 8 (OpenJDK 1.8.0_422)</option>
+            <option value="Java11">Java 11 (OpenJDK 11.0.24)</option>
+            <option value="Java17">Java 17 (OpenJDK 17.0.12)</option>
+            <option value="Java21">Java 21 (OpenJDK 21.0.4)</option>
+            <option value="Javascript">JavaScript (Node.js 20.18.0)</option>
+            <option value="Julia">Julia 1.10.5</option>
+            <option value="Kotlin JVM">Kotlin JVM 2.0.20</option>
+            <option value="Lisp">Lisp (SBCL 2.4.5)</option>
+            <option value="Logo">Logo (UCBLogo 6.2.5)</option>
+            <option value="Lua">Lua 5.4.6</option>
+            <option value="Objective-C">Objective-C (Clang 18.1.8)</option>
+            <option value="Objective-C++">Objective-C++ (Clang 18.1.8)</option>
+            <option value="OCaml">OCaml 4.14.2</option>
+            <option value="Pascal">Pascal (Free Pascal 3.2.2)</option>
+            <option value="Perl">Perl 5.38.2</option>
+            <option value="PHP">PHP 8.3.13</option>
+            <option value="Prolog">Prolog (SWI-Prolog 9.2.6)</option>
+            <option value="PyPy3">PyPy 7.3.16 (Python 3.10)</option>
+            <option value="Python3">Python 3.12.6</option>
+            <option value="Ruby">Ruby 3.2.6</option>
+            <option value="Rust">Rust 1.82.0</option>
+            <option value="Scala">Scala 3.5.0</option>
+            <option value="Swift">Swift 6.0.2</option>
+            <option value="Tcl">Tcl 8.6.14</option>
+            <option value="Typescript">TypeScript 5.6.3</option>
+          </select>
         </div>
-        <div class="form-group">
-          <label>代码</label>
-          <textarea id="code" rows="10" placeholder="在此输入代码"></textarea>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <label for="font-size" style="font-weight: 600;">字号</label>
+          <input type="number" id="font-size" value="14" min="10" max="28" style="width: 60px; padding: 0.3rem; border-radius: 4px; border: 1px solid #ccc;">
+          <span>px</span>
         </div>
+        <button id="reset-editor-btn" class="btn" style="background: #6c757d; padding: 0.2rem 0.8rem;">重置编辑器</button>
+      </div>
+
+      <!-- CodeMirror 容器 -->
+      <div id="editor-container" style="border: 1px solid #d1d5da; border-radius: 6px; overflow: hidden;"></div>
+
+      <form id="submit-form" style="margin-top: 1rem;">
         <button type="submit" class="btn btn-success">提交评测</button>
       </form>
       <div id="submit-result" style="margin-top: 1rem;"></div>
     </div>
   </div>
+
   <script type="module">
     import { getProblem, submit, getUserInfo } from '/js/api.js';
 
+    // ---------- CodeMirror 核心和基础设置 ----------
+    import { EditorView, basicSetup } from 'https://esm.sh/codemirror@6.0.1';
+    import { EditorState } from 'https://esm.sh/@codemirror/state@6.4.1';
+    import { keymap } from 'https://esm.sh/@codemirror/view@6.28.0';
+    import { indentWithTab } from 'https://esm.sh/@codemirror/commands@6.6.1';
+    import { StreamLanguage } from 'https://esm.sh/@codemirror/language@6.10.1';
+
+    // ---------- 官方语言包 ----------
+    import { cpp } from 'https://esm.sh/@codemirror/lang-cpp@6.0.2';
+    import { java } from 'https://esm.sh/@codemirror/lang-java@6.0.1';
+    import { python } from 'https://esm.sh/@codemirror/lang-python@6.1.6';
+    import { javascript } from 'https://esm.sh/@codemirror/lang-javascript@6.2.2';
+    import { rust } from 'https://esm.sh/@codemirror/lang-rust@6.0.1';
+    import { php } from 'https://esm.sh/@codemirror/lang-php@6.0.1';
+    import { go } from 'https://esm.sh/@codemirror/lang-go@6.0.1';
+    import { ruby } from 'https://esm.sh/@codemirror/lang-ruby@6.0.0';
+    import { swift } from 'https://esm.sh/@codemirror/lang-swift@6.0.0';
+    import { lua } from 'https://esm.sh/@codemirror/lang-lua@6.0.0';
+    import { perl } from 'https://esm.sh/@codemirror/lang-perl@6.0.0';
+    import { shell } from 'https://esm.sh/@codemirror/lang-shell@6.0.0';
+
+    // ---------- 用户 ----------
     const user = getUserInfo();
 
-    // 渲染导航栏
+    // ---------- 导航栏 ----------
     const nav = document.getElementById('navbar');
     nav.innerHTML = `
-      <div class="logo"><span>CB</span>OJ</div>
+      <div class="logo"><span>C</span>BOJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
@@ -108,17 +171,15 @@
       </div>
     `;
 
-    // 加载题目
+    // ---------- 加载题目 ----------
     const params = new URLSearchParams(location.search);
-    const id = params.get('id');
-    if (!id) {
+    const problemId = params.get('id');
+    if (!problemId) {
       document.getElementById('problem-content').innerHTML = '<p style="color:red;">未指定题目</p>';
     } else {
       try {
-        const problem = await getProblem(id);
-        // Markdown -> HTML
+        const problem = await getProblem(problemId);
         const html = marked.parse(problem.description);
-        // 显示题目信息
         document.getElementById('problem-content').innerHTML = `
           <h1>${problem.id}. ${problem.title}</h1>
           <p style="color: #6c757d; margin-bottom: 0.5rem;">
@@ -127,7 +188,6 @@
           <div class="card" style="margin-top: 1rem;">${html}</div>
           <p style="margin-top: 1rem;">时间限制: ${problem.time_limit}ms | 内存限制: ${problem.memory_limit}MB</p>
         `;
-        // ✅ 修复：延迟调用 KaTeX，确保 DOM 渲染完成
         setTimeout(() => {
           if (typeof renderMathInElement === 'function') {
             renderMathInElement(document.getElementById('problem-content'), {
@@ -139,11 +199,6 @@
               ],
               throwOnError: false
             });
-          } else {
-            console.warn('KaTeX auto-render not loaded, trying manual render...');
-            // 备用：尝试手动渲染
-            const elements = document.querySelectorAll('#problem-content .math');
-            // 如果没有 .math 类，可以忽略
           }
         }, 100);
       } catch (err) {
@@ -151,7 +206,225 @@
       }
     }
 
-    // 提交代码
+    // ---------- 编辑器 ----------
+    const editorContainer = document.getElementById('editor-container');
+    const languageSelect = document.getElementById('language');
+    const fontSizeInput = document.getElementById('font-size');
+    const resetBtn = document.getElementById('reset-editor-btn');
+
+    // 官方包映射（这些语言优先）
+    const officialLangMap = {
+      'C': cpp,
+      'C#': cpp, // 官方无 C#，用 cpp 后备
+      'C++98': cpp,
+      'C++03': cpp,
+      'C++11': cpp,
+      'C++14': cpp,
+      'C++17': cpp,
+      'C++20': cpp,
+      'C++23': cpp,
+      'C++26': cpp,
+      'Java8': java,
+      'Java11': java,
+      'Java17': java,
+      'Java21': java,
+      'Python3': python,
+      'PyPy3': python,
+      'Javascript': javascript,
+      'Typescript': javascript,
+      'Rust': rust,
+      'PHP': php,
+      'Go': go,
+      'Ruby': ruby,
+      'Swift': swift,
+      'Lua': lua,
+      'Perl': perl,
+      'Bash': shell,
+      'Powershell': shell,
+    };
+
+    // legacy modes 加载器（动态导入）
+    const legacyLoaders = {
+      'Ada': () => import('https://esm.sh/@codemirror/legacy-modes/mode/ada'),
+      'BASIC': () => import('https://esm.sh/@codemirror/legacy-modes/mode/vb'), // VB 语法接近
+      'Brainfuck': () => import('https://esm.sh/@codemirror/legacy-modes/mode/brainfuck'),
+      'Ceylon': () => import('https://esm.sh/@codemirror/legacy-modes/mode/ceylon'),
+      'Clojure': () => import('https://esm.sh/@codemirror/legacy-modes/mode/clojure'),
+      'Common Lisp': () => import('https://esm.sh/@codemirror/legacy-modes/mode/commonlisp'),
+      'D': () => import('https://esm.sh/@codemirror/legacy-modes/mode/d'),
+      'Dart': () => import('https://esm.sh/@codemirror/legacy-modes/mode/dart'),
+      'Eiffel': () => import('https://esm.sh/@codemirror/legacy-modes/mode/eiffel'),
+      'Erlang': () => import('https://esm.sh/@codemirror/legacy-modes/mode/erlang'),
+      'F#': () => import('https://esm.sh/@codemirror/legacy-modes/mode/mllike'), // mllike 包含 OCaml/F#
+      'Fish': () => import('https://esm.sh/@codemirror/legacy-modes/mode/javascript'), // 后备
+      'Fortran': () => import('https://esm.sh/@codemirror/legacy-modes/mode/fortran'),
+      'Haskell': () => import('https://esm.sh/@codemirror/legacy-modes/mode/haskell'),
+      'Julia': () => import('https://esm.sh/@codemirror/legacy-modes/mode/julia'),
+      'Lisp': () => import('https://esm.sh/@codemirror/legacy-modes/mode/commonlisp'), // 接近
+      'Logo': () => import('https://esm.sh/@codemirror/legacy-modes/mode/commonlisp'), // Logo 接近 Lisp
+      'Objective-C': () => import('https://esm.sh/@codemirror/legacy-modes/mode/clike'), // clike 含 Objective-C
+      'Objective-C++': () => import('https://esm.sh/@codemirror/legacy-modes/mode/clike'),
+      'OCaml': () => import('https://esm.sh/@codemirror/legacy-modes/mode/mllike'),
+      'Pascal': () => import('https://esm.sh/@codemirror/legacy-modes/mode/pascal'),
+      'Prolog': () => import('https://esm.sh/@codemirror/legacy-modes/mode/prolog'), // 有 prolog
+      'Scala': () => import('https://esm.sh/@codemirror/legacy-modes/mode/clike'), // clike 含 scala
+      'Tcl': () => import('https://esm.sh/@codemirror/legacy-modes/mode/tcl'),
+    };
+
+    // 缓存已加载的模式
+    const modeCache = new Map();
+
+    // 异步获取语言扩展
+    async function getLanguageExtension(lang) {
+      // 1. 官方包
+      if (officialLangMap[lang]) {
+        return officialLangMap[lang];
+      }
+
+      // 2. legacy modes
+      const loader = legacyLoaders[lang];
+      if (loader) {
+        if (modeCache.has(lang)) {
+          return modeCache.get(lang);
+        }
+        try {
+          const mod = await loader();
+          // 找到导出的 StreamParser
+          // 有些模式直接导出对象，有些是 default
+          let parser = mod.default || mod[Object.keys(mod)[0]];
+          // 如果 parser 是函数（可能是工厂），调用它（但大多已经实例）
+          // 对于 clike 模式，它是工厂函数，需要传入配置
+          if (typeof parser === 'function' && lang !== 'Objective-C' && lang !== 'Objective-C++' && lang !== 'Scala') {
+            // 某些模式可能需要参数，但我们先假定它已经是 StreamParser
+            // 对于 clike，我们需要传配置，这里特殊处理
+          }
+          // 处理 clike 家族（C, C++, Java, Scala, Objective-C 等）
+          // 但这些已经在官方包中，只有 Objective-C 和 Scala 可能用 legacy
+          // 但 Scala 官方包也可用，但我们用 legacy 替代
+          if (lang === 'Scala' || lang === 'Objective-C' || lang === 'Objective-C++') {
+            // 这些需要 clike 配置
+            // 但 clike 模式需要参数，可能要用 clike 工厂
+            // 直接使用已导出的模式，clike 可能导出了多个模式，比如 java, cpp 等
+            // 但 legacy 的 clike 导出了 java, cpp, scala, objectivec 等子模式
+            // 我们可以从 mod 中取对应的属性
+            const modeMap = {
+              'Scala': mod.scala || mod.Scala,
+              'Objective-C': mod.objectiveC || mod.ObjectiveC,
+              'Objective-C++': mod.objectiveCpp || mod.ObjectiveCpp,
+            };
+            parser = modeMap[lang];
+            if (!parser) {
+              // 找不到则回退
+              parser = mod.default || mod[Object.keys(mod)[0]];
+            }
+          }
+          if (parser) {
+            const ext = StreamLanguage.define(parser);
+            modeCache.set(lang, ext);
+            return ext;
+          }
+        } catch (e) {
+          console.warn(`Failed to load legacy mode for ${lang}:`, e);
+        }
+      }
+
+      // 3. 回退到 javascript
+      return javascript;
+    }
+
+    // 当前状态
+    let editorView = null;
+    let currentLang = languageSelect.value;
+
+    // 应用字体和主题
+    function getBaseExtensions(fontSize, langExt) {
+      const savedFont = localStorage.getItem('cboj-font-preference');
+      const fontFamily = savedFont ? `"${savedFont}", "Consolas", "Courier New", monospace` : '"Consolas", "Courier New", monospace';
+      return [
+        basicSetup,
+        keymap.of([indentWithTab]),
+        EditorView.lineWrapping,
+        EditorView.theme({
+          '&': { fontSize: fontSize + 'px' },
+          '.cm-scroller': { fontFamily: fontFamily },
+        }),
+        langExt,
+      ];
+    }
+
+    // 初始化编辑器
+    async function initEditor(initialCode = '') {
+      const fontSize = parseInt(fontSizeInput.value) || 14;
+      const langExt = await getLanguageExtension(currentLang);
+      const extensions = getBaseExtensions(fontSize, langExt);
+
+      const state = EditorState.create({
+        doc: initialCode,
+        extensions: extensions,
+      });
+
+      editorView = new EditorView({
+        state,
+        parent: editorContainer,
+      });
+    }
+
+    // 切换语言
+    async function changeLanguage(newLang) {
+      if (!editorView) return;
+      currentLang = newLang;
+      const langExt = await getLanguageExtension(newLang);
+      const fontSize = parseInt(fontSizeInput.value) || 14;
+      const extensions = getBaseExtensions(fontSize, langExt);
+      const doc = editorView.state.doc;
+      editorView.setState(EditorState.create({
+        doc: doc,
+        extensions: extensions,
+      }));
+    }
+
+    // 更新字号
+    async function updateFontSize(size) {
+      if (!editorView) return;
+      const langExt = await getLanguageExtension(currentLang);
+      const extensions = getBaseExtensions(size, langExt);
+      const doc = editorView.state.doc;
+      editorView.setState(EditorState.create({
+        doc: doc,
+        extensions: extensions,
+      }));
+    }
+
+    // 重置编辑器（清空内容）
+    async function resetEditor() {
+      if (!editorView) return;
+      const langExt = await getLanguageExtension(currentLang);
+      const fontSize = parseInt(fontSizeInput.value) || 14;
+      const extensions = getBaseExtensions(fontSize, langExt);
+      editorView.setState(EditorState.create({
+        doc: '',
+        extensions: extensions,
+      }));
+    }
+
+    // 启动
+    initEditor('');
+
+    // 事件绑定
+    languageSelect.addEventListener('change', (e) => {
+      changeLanguage(e.target.value);
+    });
+
+    fontSizeInput.addEventListener('change', (e) => {
+      const val = parseInt(e.target.value) || 14;
+      if (val < 10) e.target.value = 10;
+      if (val > 28) e.target.value = 28;
+      updateFontSize(parseInt(e.target.value));
+    });
+
+    resetBtn.addEventListener('click', resetEditor);
+
+    // ---------- 提交 ----------
     document.getElementById('submit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!user) {
@@ -159,19 +432,26 @@
         location.href = '/login.html';
         return;
       }
-      const language = document.getElementById('language').value;
-      const code = document.getElementById('code').value;
+      if (!editorView) {
+        alert('编辑器未初始化');
+        return;
+      }
+      const code = editorView.state.doc.toString();
       if (!code.trim()) {
         alert('代码不能为空');
         return;
       }
+      const language = languageSelect.value;
       try {
-        const res = await submit(id, language, code);
+        const res = await submit(problemId, language, code);
         document.getElementById('submit-result').innerHTML = `✅ 提交成功！RID: <a href="/submission.html?rid=${res.rid}">${res.rid}</a> 状态: ${res.status}`;
       } catch (err) {
         document.getElementById('submit-result').innerHTML = `❌ 提交失败: ${err.message}`;
       }
     });
+
+    // 当全局字体选择变化时（如果有事件），可以监听，但目前不做额外处理
+    // 用户刷新页面即可应用新字体
   </script>
 </body>
 </html>
