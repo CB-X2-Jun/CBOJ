@@ -153,6 +153,7 @@ jobs:
             "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
+            "Powershell") LANG_TIME_MULTIPLIER=2.5 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
             "Haskell") LANG_TIME_MULTIPLIER=1.5 ;;
             "Swift") LANG_TIME_MULTIPLIER=1.2 ;;
