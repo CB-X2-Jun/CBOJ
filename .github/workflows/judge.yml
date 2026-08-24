@@ -121,12 +121,13 @@ jobs:
           TEST_CASES: '${{ github.event.client_payload.testCases }}'
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
+          set +e
           CODE_RAW=$(echo "$CODE" | jq -r '.')
           
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=8 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=5 ;;
             "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
@@ -138,7 +139,8 @@ jobs:
           # 语言时间倍率（OJ 规则，对启动慢的语言放宽）
           case "$LANG" in
             "C"|"C++"*) LANG_TIME_MULTIPLIER=1.0 ;;
-            "Python"*|"PyPy"*) LANG_TIME_MULTIPLIER=1.5 ;;
+            "Python"*) LANG_TIME_MULTIPLIER=1.5 ;;
+            "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
             "Java"*|"Kotlin JVM"|"Scala") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
@@ -402,7 +404,7 @@ jobs:
               ELAPSED=$(( (NOW - START) / 1000000 ))
               if [ $ELAPSED -gt $HARD_TIMEOUT_MS ]; then
                 # 防止 PGID 为 0 或 1 导致误杀
-                if [ "$PGID" -gt 1 ]; then
+                if [[ "$PGID" =~ ^[0-9]+$ ]] && [ "$PGID" -gt 1 ]; then
                   kill -- -$PGID 2>/dev/null
                   sleep 0.1
                   kill -- -$PGID 2>/dev/null
