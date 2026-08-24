@@ -71,6 +71,12 @@ export async function updateProblem(id, problem) {
 export async function deleteProblem(id) {
   return apiFetch(`/problem/${id}`, { method: 'DELETE' });
 }
+// 题目（增加搜索）
+export async function getProblems(keyword = '') {
+  const url = keyword ? `/problems?q=${encodeURIComponent(keyword)}` : '/problems';
+  return apiFetch(url);
+}
+// 其他保持不变...
 
 // 提交
 export async function submit(problemId, language, code) {
