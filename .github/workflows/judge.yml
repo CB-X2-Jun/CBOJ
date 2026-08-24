@@ -128,7 +128,7 @@ jobs:
           CODE: '${{ github.event.client_payload.code }}'
           TIME_LIMIT: ${{ github.event.client_payload.timeLimit }}
           MEMORY_LIMIT: ${{ github.event.client_payload.memoryLimit }}
-          TEST_CASES: '${{ github.event.client_payload.testCases }}'
+          # TEST_CASES: '${{ github.event.client_payload.testCases }}'
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           set +e
@@ -136,6 +136,18 @@ jobs:
           TOTAL_SCORE=${{ github.event.client_payload.totalScore }}
           [ -z "$TOTAL_SCORE" ] && TOTAL_SCORE=100
           CODE_RAW=$(echo "$CODE" | jq -r '.')
+          
+          # ---------- 从 Worker 拉取测试用例 ----------
+          PROBLEM_ID="${{ github.event.client_payload.problemId }}"
+          TEST_CASES=$(curl -s "https://ojapi.x2cb.cc.cd/api/problem/${PROBLEM_ID}/testcases")
+          if [ -z "$TEST_CASES" ] || [ "$TEST_CASES" = "null" ]; then
+            echo "Error: Failed to fetch test cases"
+            curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+              -d "{\"rid\":$RID,\"status\":\"system_error\",\"result\":\"Failed to fetch test cases\"}" || true
+            exit 0
+          fi
+          
+          # 后续原有的内存/时间限制计算和语言处理保持不变...
           
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
