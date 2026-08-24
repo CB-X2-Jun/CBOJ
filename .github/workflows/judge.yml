@@ -72,15 +72,13 @@ jobs:
             "Ada") sudo apt-get install -y gnat ;;
             "Pascal") sudo apt-get install -y fpc ;;
             "BASIC_QB"|"BASIC_FB")
-              # 安装依赖（提供 libtinfo.so.5）
-              sudo apt-get install -y libncurses5
-              # 下载 FreeBASIC
+              sudo apt-get install -y gcc libncurses-dev libffi-dev
+              sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
               wget -q http://downloads.sourceforge.net/fbc/FreeBASIC-1.10.1-linux-x86_64.tar.xz?download -O FreeBASIC-1.10.1-linux-x86_64.tar.xz
               tar -xJf FreeBASIC-1.10.1-linux-x86_64.tar.xz
               cd FreeBASIC-1.10.1-linux-x86_64
               sudo ./install.sh -i
               cd ..
-              # 验证
               fbc --version
               ;;
             "Prolog") sudo apt-get install -y swi-prolog ;;
