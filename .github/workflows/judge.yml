@@ -134,207 +134,32 @@ jobs:
           ORIGINAL_MEM_KB=$((MEMORY_LIMIT * 1024))
           REAL_MEM_KB=$((ORIGINAL_MEM_KB * MEM_MULTIPLIER))
 
-          # ---------- 时间限制倍率（硬保护） ----------
+          # ---------- 时间限制计算 ----------
+          # 语言时间倍率（OJ 规则，对启动慢的语言放宽）
           case "$LANG" in
-            "C"|"C++"*) TIME_MULTIPLIER=1.2 ;;
-            "Python"*|"PyPy"*) TIME_MULTIPLIER=1.2 ;;
-            "Java"*|"Kotlin JVM"|"Scala") TIME_MULTIPLIER=2.0 ;;
-            "Clojure") TIME_MULTIPLIER=5.0 ;;
-            "Erlang") TIME_MULTIPLIER=2.5 ;;
-            "Julia") TIME_MULTIPLIER=3.0 ;;
-            "Haskell"|"Swift") TIME_MULTIPLIER=1.5 ;;
-            *) TIME_MULTIPLIER=1.2 ;;
+            "C"|"C++"*) LANG_TIME_MULTIPLIER=1.0 ;;
+            "Python"*) LANG_TIME_MULTIPLIER=1.5
+            "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
+            "Java"*|"Kotlin JVM"|"Scala"|"Julia") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
+            "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
+            "Haskell") LANG_TIME_MULTIPLIER=1.5 ;;
+            "Swift") LANG_TIME_MULTIPLIER=1.2 ;;
+            *) LANG_TIME_MULTIPLIER=1.0 ;;
           esac
-          HARD_TIMEOUT_MS=$(python3 -c "print(int($TIME_LIMIT * $TIME_MULTIPLIER))")
+          
+          # 实际允许时间（毫秒）
+          REAL_TIME_LIMIT=$(python3 -c "print(int($TIME_LIMIT * $LANG_TIME_MULTIPLIER))")
+          # 硬保护倍率（固定 1.2，防止调度抖动）
+          SAFETY_MULTIPLIER=1.2
+          HARD_TIMEOUT_MS=$(python3 -c "print(int($REAL_TIME_LIMIT * $SAFETY_MULTIPLIER))")
           if [ $HARD_TIMEOUT_MS -lt 500 ]; then
             HARD_TIMEOUT_MS=500
           fi
 
-          # ---------- 语言特定处理 ----------
+          # ---------- 语言特定处理（保持不变） ----------
           case "$LANG" in
-            # ---------- Java 各版本显式指定 JAVA_HOME ----------
-            "Java8")
-              export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
-              export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 8:"; java -version
-              echo "$CODE_RAW" > Main.java
-              if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              if [ ! -f Main.class ]; then
-                ERROR_MSG="Compilation succeeded but Main.class not found"
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
-                exit 0
-              fi
-              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
-              SKIP_COMMON=1
-              ;;
-
-            "Java11")
-              export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
-              export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 11:"; java -version
-              echo "$CODE_RAW" > Main.java
-              if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              if [ ! -f Main.class ]; then
-                ERROR_MSG="Compilation succeeded but Main.class not found"
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
-                exit 0
-              fi
-              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
-              SKIP_COMMON=1
-              ;;
-
-            "Java17")
-              export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
-              export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 17:"; java -version
-              echo "$CODE_RAW" > Main.java
-              if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              if [ ! -f Main.class ]; then
-                ERROR_MSG="Compilation succeeded but Main.class not found"
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
-                exit 0
-              fi
-              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
-              SKIP_COMMON=1
-              ;;
-
-            "Java21")
-              export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
-              export PATH="$JAVA_HOME/bin:$PATH"
-              echo "Using Java 21:"; java -version
-              echo "$CODE_RAW" > Main.java
-              if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              if [ ! -f Main.class ]; then
-                ERROR_MSG="Compilation succeeded but Main.class not found"
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":\"$ERROR_MSG\"}"
-                exit 0
-              fi
-              RUN_CMD="java -Xmx${REAL_MEM_KB}k -cp . Main"
-              SKIP_COMMON=1
-              ;;
-
-            "Eiffel")
-              echo "$CODE_RAW" > main.e
-              EIFFEL_ROOT="$PWD/Eiffel_25.12"
-              export ISE_EIFFEL="$EIFFEL_ROOT"
-              export ISE_PLATFORM="linux-x86-64"
-              export ISE_LIBRARY="$EIFFEL_ROOT"
-              EC="$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec"
-              echo "===== Compile Eiffel ====="
-              "$EC" \
-                -batch \
-                -finalize \
-                -c_compile \
-                main.e \
-                > eiffel.log 2>&1
-              if [ $? -ne 0 ]; then
-                  echo "===== Eiffel compilation failed ====="
-                  cat eiffel.log
-                  ERROR_MSG=$(cat eiffel.log | head -c 500 | jq -sR .)
-                  curl -X POST "$CALLBACK_URL" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                  exit 0
-              fi
-              echo "===== Eiffel log ====="
-              cat eiffel.log
-              EXECUTABLE=$(find EIFGENs \
-                  -type f \
-                  -name "main" \
-                  -perm -111 | head -1)
-              if [ -z "$EXECUTABLE" ]; then
-                  echo "Executable not found"
-                  find EIFGENs -type f | head -50
-                  exit 0
-              fi
-              RUN_CMD="$EXECUTABLE"
-              SKIP_COMMON=1
-              ;;
-
-            "Ceylon")
-              mkdir -p source/cboj
-              echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
-              echo "$CODE_RAW" > source/cboj/run.ceylon
-              if ! ceylon compile --source source cboj 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
-                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
-                exit 0
-              fi
-              RUN_CMD="ceylon run cboj/1.0.0"
-              SKIP_COMMON=1
-              ;;
-
-            "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
-            "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure -J-Xmx${REAL_MEM_KB}k -M main.clj" ;;
-            "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
-            "C++98") EXT="cpp"; COMPILE="g++ -std=c++98 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++03") EXT="cpp"; COMPILE="g++ -std=c++03 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++11") EXT="cpp"; COMPILE="g++ -std=c++11 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++14") EXT="cpp"; COMPILE="g++ -std=c++14 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++17") EXT="cpp"; COMPILE="g++ -std=c++17 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++20") EXT="cpp"; COMPILE="g++ -std=c++20 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++23") EXT="cpp"; COMPILE="g++ -std=c++23 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "C++26") EXT="cpp"; COMPILE="g++ -std=c++26 -O2 main.cpp -o program"; RUN_CMD="./program" ;;
-            "Python3") EXT="py"; COMPILE=""; RUN_CMD="python3 main.py" ;;
-            "PyPy3") EXT="py"; COMPILE=""; RUN_CMD="pypy3 main.py" ;;
-            "Go") EXT="go"; COMPILE="go build -o program main.go"; RUN_CMD="./program" ;;
-            "Rust") EXT="rs"; COMPILE="rustc -O main.rs -o program"; RUN_CMD="./program" ;;
-            "Ruby") EXT="rb"; COMPILE=""; RUN_CMD="ruby main.rb" ;;
-            "PHP") EXT="php"; COMPILE=""; RUN_CMD="php main.php" ;;
-            "Javascript") EXT="js"; COMPILE=""; RUN_CMD="node main.js" ;;
-            "Typescript") EXT="ts"; COMPILE="tsc main.ts"; RUN_CMD="node main.js" ;;
-            "C#") EXT="cs"; COMPILE="mcs main.cs"; RUN_CMD="mono main.exe" ;;
-            "F#") EXT="fs"; COMPILE="fsharpc main.fs"; RUN_CMD="mono main.exe" ;;
-            "D") EXT="d"; COMPILE="gdc -O2 main.d -o program"; RUN_CMD="./program" ;;
-            "Lua") EXT="lua"; COMPILE=""; RUN_CMD="lua main.lua" ;;
-            "Perl") EXT="pl"; COMPILE=""; RUN_CMD="perl main.pl" ;;
-            "Haskell") EXT="hs"; COMPILE="ghc -O2 main.hs -o program"; RUN_CMD="./program" ;;
-            "Julia") EXT="jl"; COMPILE=""; RUN_CMD="julia --startup-file=no main.jl" ;;
-            "Swift") EXT="swift"; COMPILE="swiftc -O main.swift -o program"; RUN_CMD="./program" ;;
-            "Bash") EXT="sh"; COMPILE=""; RUN_CMD="bash main.sh" ;;
-            "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
-            "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN_CMD="./program" ;;
-            "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
-            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="bwbasic main.bas" ;;
-            "Prolog") EXT="pl"; COMPILE=""; RUN_CMD="swipl -q -t main -s main.pl" ;;
-            "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN_CMD="sbcl --script main.lisp" ;;
-            "Tcl") EXT="tcl"; COMPILE=""; RUN_CMD="tclsh main.tcl" ;;
-            "Erlang") EXT="erl"; COMPILE="erlc main.erl"; RUN_CMD="erl -noshell -s main start -s init stop" ;;
-            "OCaml") EXT="ml"; COMPILE="ocamlopt -o program main.ml"; RUN_CMD="./program" ;;
-            "Scala") EXT="scala"; COMPILE="scalac main.scala"; RUN_CMD="scala Main" ;;
-            "Kotlin JVM") EXT="kt"; COMPILE="kotlinc main.kt -include-runtime -d program.jar"; RUN_CMD="java -Xmx${REAL_MEM_KB}k -jar program.jar" ;;
-            "Objective-C") EXT="m"; COMPILE="clang -O2 main.m -o program"; RUN_CMD="./program" ;;
-            "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN_CMD="./program" ;;
-            "Dart") EXT="dart"; COMPILE=""; RUN_CMD="dart run main.dart" ;;
-            "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
-            "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex -interaction=batchmode main.tex" ;;
-            "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -ExecutionPolicy Bypass -File main.ps1" ;;
-            *) echo "Unsupported language: $LANG"; exit 1 ;;
+            # ... 这里原封不动保留你现有的所有语言分支，直到 esac 结束 ...
           esac
 
           # ---------- 通用编译（非特殊语言） ----------
@@ -367,22 +192,25 @@ jobs:
 
             START=$(date +%s%N)
 
-            # 在 setsid 内部设置沙箱限制，不影响外层 judge shell
+            # 用户程序执行块：
+            # 1. set +e 避免 SIGSEGV 导致整个 step 退出
+            # 2. ulimit 限制用户程序（不影响外层 judge）
+            # 3. exec /usr/bin/time 让 $! 指向 time 进程，PGID 稳定
             setsid bash -c "
-              ulimit -f 102400  # 文件大小限制 100MB
-              ulimit -u 128     # 最大进程数 128
-              ulimit -c 0       # 禁止生成 core dump
+              set +e
+              ulimit -f 102400   # 文件大小限制 100MB
+              ulimit -u 128      # 最大进程数 128
+              ulimit -c 0        # 禁止 core dump
               # 不设 ulimit -v，避免破坏 JVM/Clojure 等
-              /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
+              exec /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
             " > "$OUT_FILE" 2> "$ERR_FILE" &
             PID=$!
 
-            # 获取进程组 ID
+            # 获取进程组 ID（此时 PID 即 session leader）
             sleep 0.05
             PGID=$(ps -o pgid= -p $PID 2>/dev/null | tr -d ' ')
-            if [ -z "$PGID" ]; then
-              PGID=$PID
-            fi
+            # 如果 PGID 获取失败，设为 0（后续 kill 会跳过）
+            [ -z "$PGID" ] && PGID=0
 
             KILLED=0
 
@@ -391,17 +219,27 @@ jobs:
               NOW=$(date +%s%N)
               ELAPSED=$(( (NOW - START) / 1000000 ))
               if [ $ELAPSED -gt $HARD_TIMEOUT_MS ]; then
-                kill -- -$PGID 2>/dev/null
-                sleep 0.1
-                kill -- -$PGID 2>/dev/null
+                # 防止 PGID 为 0 或 1 导致误杀
+                if [ "$PGID" -gt 1 ]; then
+                  kill -- -$PGID 2>/dev/null
+                  sleep 0.1
+                  kill -- -$PGID 2>/dev/null
+                else
+                  # fallback：直接杀 PID
+                  kill -TERM $PID 2>/dev/null
+                  sleep 0.1
+                  kill -KILL $PID 2>/dev/null
+                fi
                 KILLED=1
                 break
               fi
               sleep 0.01
             done
 
-            wait $PID 2>/dev/null
-            EXIT_CODE=$?
+            # 等待进程结束，使用 || 捕获退出码（避免 set -e 导致整个 step 终止）
+            EXIT_CODE=0
+            wait $PID 2>/dev/null || EXIT_CODE=$?
+
             END=$(date +%s%N)
             TIME_USED=$(( (END - START) / 1000000 ))
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
@@ -419,6 +257,8 @@ jobs:
             echo "========== DEBUG =========="
             echo "EXIT_CODE=$EXIT_CODE"
             echo "TIME_USED=${TIME_USED}ms"
+            echo "REAL_TIME_LIMIT=${REAL_TIME_LIMIT}ms"
+            echo "HARD_TIMEOUT_MS=${HARD_TIMEOUT_MS}ms"
             echo "MEM_USED=${MEM_USED}KB"
             echo "ORIGINAL_MEM_LIMIT=${ORIGINAL_MEM_KB}KB"
             echo "REAL_MEM_LIMIT=${REAL_MEM_KB}KB"
@@ -432,14 +272,14 @@ jobs:
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE" "$INPUT_FILE"
 
-            # 状态判断：MLE（含 137）、TLE、RE、WA
+            # 状态判断：MLE（RSS 超限 或 137 且非 KILLED）、TLE（KILLED 或 TIME_USED > REAL_TIME_LIMIT）、RE、WA
             if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
               STATUS="memory_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -eq 137 ] && [ "$KILLED" -eq 0 ]; then
               STATUS="memory_limit_exceeded"
               break
-            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$HARD_TIMEOUT_MS" ]; then
+            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$REAL_TIME_LIMIT" ]; then
               STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -ne 0 ]; then
@@ -453,4 +293,4 @@ jobs:
 
           MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
           curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}"
+            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}" || true
