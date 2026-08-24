@@ -5,38 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CBOJ - 题目详情</title>
   <link rel="stylesheet" href="/css/style.css">
-  <!-- KaTeX 使用 cdnjs 稳定版本 -->
+  <!-- KaTeX CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
   <!-- Marked.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 
-  <!-- CodeMirror 6 Import Map（包含所有基础依赖） -->
-  <script type="importmap">
-    {
-      "imports": {
-        "codemirror": "https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/index.js",
-        "@codemirror/state": "https://cdn.jsdelivr.net/npm/@codemirror/state@6.4.1/dist/index.js",
-        "@codemirror/view": "https://cdn.jsdelivr.net/npm/@codemirror/view@6.28.0/dist/index.js",
-        "@codemirror/commands": "https://cdn.jsdelivr.net/npm/@codemirror/commands@6.6.1/dist/index.js",
-        "@codemirror/language": "https://cdn.jsdelivr.net/npm/@codemirror/language@6.10.1/dist/index.js",
-        "@codemirror/autocomplete": "https://cdn.jsdelivr.net/npm/@codemirror/autocomplete@6.16.0/dist/index.js",
-        "@codemirror/lint": "https://cdn.jsdelivr.net/npm/@codemirror/lint@6.8.0/dist/index.js",
-        "@codemirror/search": "https://cdn.jsdelivr.net/npm/@codemirror/search@6.5.6/dist/index.js",
-        "@codemirror/theme-one-dark": "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.1.2/dist/index.js",
-        "@codemirror/panel": "https://cdn.jsdelivr.net/npm/@codemirror/panel@6.0.1/dist/index.js",
-        "@codemirror/gutter": "https://cdn.jsdelivr.net/npm/@codemirror/gutter@6.0.2/dist/index.js",
-        "@codemirror/lang-cpp": "https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js",
-        "@codemirror/lang-java": "https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.1/dist/index.js",
-        "@codemirror/lang-javascript": "https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.2.2/dist/index.js",
-        "@codemirror/lang-python": "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.6/dist/index.js",
-        "@codemirror/lang-rust": "https://cdn.jsdelivr.net/npm/@codemirror/lang-rust@6.0.1/dist/index.js",
-        "@codemirror/lang-php": "https://cdn.jsdelivr.net/npm/@codemirror/lang-php@6.0.1/dist/index.js",
-        "@codemirror/lang-go": "https://cdn.jsdelivr.net/npm/@codemirror/lang-go@6.0.1/dist/index.js"
-      }
-    }
-  </script>
+  <!-- CodeMirror 5 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <!-- 常用模式（按需加载） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>  <!-- C/C++/Java/Objective-C/Scala -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/swift/swift.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/perl/perl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <!-- 更多 legacy 模式 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/fortran/fortran.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/haskell/haskell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/julia/julia.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/pascal/pascal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/erlang/erlang.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/tcl/tcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/commonlisp/commonlisp.min.js"></script>
+  <!-- 可能缺失的模式，可以回退到 plain -->
+  <style>
+    .CodeMirror { height: auto; min-height: 300px; border: 1px solid #d1d5da; border-radius: 6px; font-size: 14px; }
+    .CodeMirror-scroll { min-height: 300px; }
+    .cm-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; align-items: center; }
+  </style>
 </head>
 <body>
   <nav id="navbar"></nav>
@@ -44,8 +49,7 @@
     <div id="problem-content"></div>
     <div class="card" style="margin-top: 2rem;">
       <h3>📤 提交代码</h3>
-      <!-- 工具栏 -->
-      <div style="display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; align-items: center;">
+      <div class="cm-editor-toolbar">
         <div style="display: flex; align-items: center; gap: 0.4rem;">
           <label for="language" style="font-weight: 600;">语言</label>
           <select id="language" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
@@ -110,8 +114,8 @@
         <button id="reset-editor-btn" class="btn" style="background: #6c757d; padding: 0.2rem 0.8rem;">重置编辑器</button>
       </div>
 
-      <!-- CodeMirror 容器 -->
-      <div id="editor-container" style="border: 1px solid #d1d5da; border-radius: 6px; overflow: hidden; min-height: 300px;"></div>
+      <!-- 编辑器容器 -->
+      <textarea id="editor-container"></textarea>
 
       <form id="submit-form" style="margin-top: 1rem;">
         <button type="submit" class="btn btn-success">提交评测</button>
@@ -122,16 +126,6 @@
 
   <script type="module">
     import { getProblem, submit, getUserInfo } from '/js/api.js';
-
-    // ---------- CodeMirror 核心 ----------
-    import { EditorView, basicSetup } from 'codemirror';
-    import { EditorState } from '@codemirror/state';
-    import { keymap } from '@codemirror/view';
-    import { indentWithTab } from '@codemirror/commands';
-    import { StreamLanguage } from '@codemirror/language';
-
-    // ---------- 官方语言包（仅导入 C++，其他按需加载） ----------
-    import { cpp } from '@codemirror/lang-cpp';
 
     // ---------- 用户 ----------
     const user = getUserInfo();
@@ -189,199 +183,144 @@
       }
     }
 
-    // ---------- 编辑器 ----------
-    const editorContainer = document.getElementById('editor-container');
+    // ---------- CodeMirror 5 编辑器 ----------
+    const textarea = document.getElementById('editor-container');
     const languageSelect = document.getElementById('language');
     const fontSizeInput = document.getElementById('font-size');
     const resetBtn = document.getElementById('reset-editor-btn');
 
-    // 语言包加载器（懒加载）
-    const langLoaders = {
-      'C': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C#': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++98': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++03': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++11': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++14': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++17': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++20': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++23': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'C++26': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.2/dist/index.js').then(m => m.cpp),
-      'Java8': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.1/dist/index.js').then(m => m.java),
-      'Java11': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.1/dist/index.js').then(m => m.java),
-      'Java17': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.1/dist/index.js').then(m => m.java),
-      'Java21': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.1/dist/index.js').then(m => m.java),
-      'Python3': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.6/dist/index.js').then(m => m.python),
-      'PyPy3': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.6/dist/index.js').then(m => m.python),
-      'Javascript': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.2.2/dist/index.js').then(m => m.javascript),
-      'Typescript': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.2.2/dist/index.js').then(m => m.typescript),
-      'Rust': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-rust@6.0.1/dist/index.js').then(m => m.rust),
-      'PHP': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-php@6.0.1/dist/index.js').then(m => m.php),
-      'Go': () => import('https://cdn.jsdelivr.net/npm/@codemirror/lang-go@6.0.1/dist/index.js').then(m => m.go),
+    // 模式映射（CodeMirror 5 的 mode 名称）
+    const modeMap = {
+      'Ada': 'text/x-ada',
+      'Bash': 'text/x-sh',
+      'BASIC': 'text/x-vb',
+      'Brainfuck': 'text/x-brainfuck',
+      'C': 'text/x-csrc',
+      'C#': 'text/x-csharp',
+      'C++98': 'text/x-c++src',
+      'C++03': 'text/x-c++src',
+      'C++11': 'text/x-c++src',
+      'C++14': 'text/x-c++src',
+      'C++17': 'text/x-c++src',
+      'C++20': 'text/x-c++src',
+      'C++23': 'text/x-c++src',
+      'C++26': 'text/x-c++src',
+      'Ceylon': 'text/x-ceylon',
+      'Clojure': 'text/x-clojure',
+      'Common Lisp': 'text/x-common-lisp',
+      'D': 'text/x-d',
+      'Dart': 'text/x-dart',
+      'Eiffel': 'text/x-eiffel',
+      'Erlang': 'text/x-erlang',
+      'F#': 'text/x-fsharp',
+      'Fish': 'text/x-javascript', // 回退
+      'Fortran': 'text/x-fortran',
+      'Go': 'text/x-go',
+      'Haskell': 'text/x-haskell',
+      'Java8': 'text/x-java',
+      'Java11': 'text/x-java',
+      'Java17': 'text/x-java',
+      'Java21': 'text/x-java',
+      'Javascript': 'text/javascript',
+      'Julia': 'text/x-julia',
+      'Kotlin JVM': 'text/x-kotlin',
+      'Lisp': 'text/x-common-lisp',
+      'Logo': 'text/x-common-lisp',
+      'Lua': 'text/x-lua',
+      'Objective-C': 'text/x-objectivec',
+      'Objective-C++': 'text/x-objectivec',
+      'OCaml': 'text/x-ocaml',
+      'Pascal': 'text/x-pascal',
+      'Perl': 'text/x-perl',
+      'PHP': 'text/x-php',
+      'Prolog': 'text/x-prolog',
+      'PyPy3': 'text/x-python',
+      'Python3': 'text/x-python',
+      'Ruby': 'text/x-ruby',
+      'Rust': 'text/x-rust',
+      'Scala': 'text/x-scala',
+      'Swift': 'text/x-swift',
+      'Tcl': 'text/x-tcl',
+      'Typescript': 'text/typescript',
     };
 
-    // legacy-modes 映射
-    const legacyMap = {
-      'Ada': 'ada',
-      'BASIC': 'vb',
-      'Brainfuck': 'brainfuck',
-      'Ceylon': 'ceylon',
-      'Clojure': 'clojure',
-      'Common Lisp': 'commonlisp',
-      'D': 'd',
-      'Dart': 'dart',
-      'Eiffel': 'eiffel',
-      'Erlang': 'erlang',
-      'F#': 'fsharp',
-      'Fish': 'javascript',
-      'Fortran': 'fortran',
-      'Haskell': 'haskell',
-      'Julia': 'julia',
-      'Lisp': 'commonlisp',
-      'Logo': 'commonlisp',
-      'Lua': 'lua',
-      'Objective-C': 'objectivec',
-      'Objective-C++': 'objectivecpp',
-      'OCaml': 'ocaml',
-      'Pascal': 'pascal',
-      'Perl': 'perl',
-      'Prolog': 'prolog',
-      'Ruby': 'ruby',
-      'Scala': 'scala',
-      'Swift': 'swift',
-      'Tcl': 'tcl',
-      'Bash': 'shell',
-      'Powershell': 'powershell',
-    };
+    // 当前编辑器实例
+    let editor = null;
 
-    const extCache = new Map();
-    let currentLang = 'C++17';
-    let editorView = null;
-
-    // 获取语言扩展
-    async function getLanguageExtension(lang) {
-      if (extCache.has(lang)) {
-        return extCache.get(lang);
-      }
-
-      let ext = null;
-
-      // 1. 官方 loader
-      const loader = langLoaders[lang];
-      if (loader) {
-        try {
-          ext = await loader();
-          extCache.set(lang, ext);
-          return ext;
-        } catch (e) {
-          console.warn(`Failed to load official mode for ${lang}:`, e);
-        }
-      }
-
-      // 2. legacy-modes
-      const legacyName = legacyMap[lang];
-      if (legacyName) {
-        try {
-          const mod = await import(`https://cdn.jsdelivr.net/npm/@codemirror/legacy-modes@6.3.4/mode/${legacyName}.js`);
-          let parser = mod.default || mod[Object.keys(mod)[0]];
-          if (parser) {
-            // 处理子模式
-            if (legacyName === 'mllike') {
-              const subMap = { 'F#': 'fsharp', 'OCaml': 'ocaml' };
-              const sub = subMap[lang];
-              if (sub && parser[sub]) parser = parser[sub];
-            } else if (legacyName === 'clike') {
-              const subMap = { 'Objective-C': 'objectivec', 'Objective-C++': 'objectivecpp', 'Scala': 'scala' };
-              const sub = subMap[lang];
-              if (sub && parser[sub]) parser = parser[sub];
-            }
-            ext = StreamLanguage.define(parser);
-            extCache.set(lang, ext);
-            return ext;
-          }
-        } catch (e) {
-          console.warn(`Failed to load legacy mode for ${lang}:`, e);
-        }
-      }
-
-      // 回退：null（无高亮）
-      extCache.set(lang, null);
-      return null;
-    }
-
-    function getExtensions(langExt) {
+    // 初始化编辑器
+    function initEditor(initialCode = '') {
+      const mode = modeMap[languageSelect.value] || 'text/plain';
       const fontSize = parseInt(fontSizeInput.value) || 14;
       const savedFont = localStorage.getItem('cboj-font-preference');
       const fontFamily = savedFont ? `"${savedFont}", "Consolas", "Courier New", monospace` : '"Consolas", "Courier New", monospace';
-      const base = [
-        basicSetup,
-        keymap.of([indentWithTab]),
-        EditorView.lineWrapping,
-        EditorView.theme({
-          '&': { fontSize: fontSize + 'px' },
-          '.cm-scroller': { fontFamily: fontFamily },
-          '.cm-content': { padding: '8px' },
-        }),
-      ];
-      if (langExt) {
-        base.push(langExt);
+
+      editor = CodeMirror.fromTextArea(textarea, {
+        mode: mode,
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false,
+        lineWrapping: true,
+        theme: 'default',
+        viewportMargin: Infinity,
+        extraKeys: {
+          'Tab': 'indentMore',
+          'Shift-Tab': 'indentLess'
+        },
+        styleActiveLine: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        autoCloseTags: true,
+        foldGutter: true,
+        gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+      });
+
+      // 设置字体
+      editor.getWrapperElement().style.fontSize = fontSize + 'px';
+      editor.getWrapperElement().style.fontFamily = fontFamily;
+
+      // 设置初始内容
+      if (initialCode) {
+        editor.setValue(initialCode);
       }
-      return base;
-    }
 
-    async function initEditor(initialCode = '') {
-      const langExt = await getLanguageExtension('C++17');
-      const extensions = getExtensions(langExt);
-      const state = EditorState.create({
-        doc: initialCode,
-        extensions: extensions,
+      // 监听改变，调整高度（自动）
+      editor.on('change', () => {
+        editor.refresh();
       });
-      editorView = new EditorView({
-        state,
-        parent: editorContainer,
-      });
+
+      // 首次刷新
+      setTimeout(() => editor.refresh(), 50);
     }
 
-    async function changeLanguage(newLang) {
-      if (!editorView) return;
-      const langExt = await getLanguageExtension(newLang);
-      const extensions = getExtensions(langExt);
-      const doc = editorView.state.doc;
-      editorView.setState(EditorState.create({
-        doc: doc,
-        extensions: extensions,
-      }));
+    // 切换语言
+    function changeLanguage(newLang) {
+      if (!editor) return;
+      const mode = modeMap[newLang] || 'text/plain';
+      editor.setOption('mode', mode);
+      // 有些模式需要额外加载，但 CodeMirror 会尝试加载，如果未加载则会报错，但不会影响已有功能
+      // 为了安全，可以尝试手动加载模式（但 CDN 已预加载多数常用模式）
     }
 
+    // 更新字号
     function updateFontSize(size) {
-      if (!editorView) return;
-      const langExt = editorView.state.extensions.find(e => e.constructor?.name === 'LanguageSupport');
-      const extensions = getExtensions(langExt);
-      const doc = editorView.state.doc;
-      editorView.setState(EditorState.create({
-        doc: doc,
-        extensions: extensions,
-      }));
+      if (!editor) return;
+      editor.getWrapperElement().style.fontSize = size + 'px';
+      editor.refresh();
     }
 
+    // 重置内容
     function resetEditor() {
-      if (!editorView) return;
-      const langExt = editorView.state.extensions.find(e => e.constructor?.name === 'LanguageSupport');
-      const extensions = getExtensions(langExt);
-      editorView.setState(EditorState.create({
-        doc: '',
-        extensions: extensions,
-      }));
+      if (!editor) return;
+      editor.setValue('');
     }
 
+    // 启动
     initEditor('');
 
+    // 事件绑定
     languageSelect.addEventListener('change', (e) => {
-      const newLang = e.target.value;
-      if (newLang !== currentLang) {
-        currentLang = newLang;
-        changeLanguage(newLang);
-      }
+      changeLanguage(e.target.value);
     });
 
     fontSizeInput.addEventListener('change', (e) => {
@@ -401,11 +340,11 @@
         location.href = '/login.html';
         return;
       }
-      if (!editorView) {
+      if (!editor) {
         alert('编辑器未初始化');
         return;
       }
-      const code = editorView.state.doc.toString();
+      const code = editor.getValue();
       if (!code.trim()) {
         alert('代码不能为空');
         return;
