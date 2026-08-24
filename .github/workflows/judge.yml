@@ -71,20 +71,7 @@ jobs:
             "Fortran") sudo apt-get install -y gfortran ;;
             "Ada") sudo apt-get install -y gnat ;;
             "Pascal") sudo apt-get install -y fpc ;;
-            "BASIC_QB"|"BASIC_FB")
-              # 安装依赖
-              sudo apt-get install -y gcc libncurses-dev libffi-dev
-              # 下载并安装 libtinfo5（强制覆盖）
-              wget -q http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
-              sudo dpkg -i --force-overwrite libtinfo5_6.3-2ubuntu0.1_amd64.deb || sudo apt-get install -f -y
-              # 下载并安装 FreeBASIC
-              wget -q http://downloads.sourceforge.net/fbc/FreeBASIC-1.10.1-linux-x86_64.tar.xz?download -O FreeBASIC-1.10.1-linux-x86_64.tar.xz
-              tar -xJf FreeBASIC-1.10.1-linux-x86_64.tar.xz
-              cd FreeBASIC-1.10.1-linux-x86_64
-              sudo ./install.sh -i
-              cd ..
-              fbc --version
-              ;;
+            "BASIC") sudo apt-get install -y yabasic ;;
             "Prolog") sudo apt-get install -y swi-prolog ;;
             "Lisp"|"Common Lisp") sudo apt-get install -y sbcl ;;
             "Tcl") sudo apt-get install -y tcl ;;
@@ -149,8 +136,8 @@ jobs:
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure") MEM_MULTIPLIER=5 ;;
-            "Haskell"|"Swift") MEM_MULTIPLIER=3 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure"|"Ceylon") MEM_MULTIPLIER=5 ;;
+            "Haskell"|"Swift"|"Erlang") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
           
@@ -163,7 +150,7 @@ jobs:
             "C"|"C++"*) LANG_TIME_MULTIPLIER=1.0 ;;
             "Python"*) LANG_TIME_MULTIPLIER=1.5 ;;
             "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
-            "Java"*|"Kotlin JVM"|"Scala") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
@@ -357,16 +344,7 @@ jobs:
             "Fortran") EXT="f90"; COMPILE="gfortran -O2 main.f90 -o program"; RUN_CMD="./program" ;;
             "Ada") EXT="adb"; COMPILE="gnatmake main.adb -o program"; RUN_CMD="./program" ;;
             "Pascal") EXT="pas"; COMPILE="fpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
-            "BASIC_QB")
-              EXT="bas"
-              COMPILE="fbc -lang qb main.bas -x program"
-              RUN_CMD="./program"
-              ;;
-            "BASIC_FB")
-              EXT="bas"
-              COMPILE="fbc -lang fb main.bas -x program"
-              RUN_CMD="./program"
-              ;;
+            "BASIC") EXT="bas"; COMPILE=""; RUN_CMD="yabasic main.bas" ;;
             "Prolog") EXT="pl"; COMPILE=""; RUN_CMD="swipl -q -t main -s main.pl" ;;
             "Lisp"|"Common Lisp") EXT="lisp"; COMPILE=""; RUN_CMD="sbcl --script main.lisp" ;;
             "Tcl") EXT="tcl"; COMPILE=""; RUN_CMD="tclsh main.tcl" ;;
