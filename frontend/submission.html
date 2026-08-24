@@ -10,16 +10,19 @@
   <div class="container">
     <h1>📄 提交详情 #<span id="rid-display"></span></h1>
     <div id="submission-info" class="card"></div>
+    <div id="details-area" class="card" style="margin-top:1rem;">
+      <h3>测试点详情</h3>
+      <div id="details-grid" style="display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.5rem;"></div>
+    </div>
     <div id="code-area" class="card" style="margin-top:1rem;">
       <h3>代码</h3>
       <pre id="code-content"></pre>
     </div>
-    ${ /* 如果是管理员，显示取消按钮 */ }
     <div id="admin-actions"></div>
   </div>
   <script type="module">
-    import { getSubmission, cancelSubmission, getUserInfo, logout } from '/js/api.js';
-    // 导航栏略
+    import { getSubmission, cancelSubmission, getUserInfo } from '/js/api.js';
+
     const nav = document.getElementById('navbar');
     const user = getUserInfo();
     nav.innerHTML = `
@@ -44,11 +47,17 @@
 
     const data = await getSubmission(rid);
     document.getElementById('rid-display').textContent = rid;
+
+    const scoreDisplay = data.score !== undefined && data.score !== null 
+      ? `${data.score}/${data.max_score || 100}` 
+      : '不可用';
+
     document.getElementById('submission-info').innerHTML = `
       <p><strong>用户：</strong>${data.username}</p>
       <p><strong>题目：</strong><a href="/problem.html?id=${data.problem_id}">${data.problem_title || data.problem_id}</a></p>
       <p><strong>语言：</strong>${data.language}</p>
       <p><strong>状态：</strong><span class="status-${data.status}">${data.status}</span></p>
+      <p><strong>得分：</strong>${scoreDisplay}</p>
       <p><strong>耗时：</strong>${data.time_used ?? '-'}ms</p>
       <p><strong>内存：</strong>${data.memory_used ?? '-'}MB</p>
       <p><strong>提交时间：</strong>${new Date(data.created_at).toLocaleString()}</p>
@@ -56,8 +65,37 @@
       ${data.result ? `<p><strong>结果详情：</strong><pre>${data.result}</pre></p>` : ''}
     `;
 
+    // 渲染测试点详情
+    const detailsGrid = document.getElementById('details-grid');
+    const details = data.details || [];
+
+    if (details.length === 0) {
+      detailsGrid.innerHTML = '<p style="color: #6c757d;">数据点信息不可用（可能是本次大改前的提交）</p>';
+    } else {
+      detailsGrid.innerHTML = details.map((d, idx) => {
+        const statusMap = {
+          'accepted': { label: 'AC', color: '#28a745' },
+          'wrong_answer': { label: 'WA', color: '#d73a49' },
+          'time_limit_exceeded': { label: 'TLE', color: '#1a237e' },
+          'memory_limit_exceeded': { label: 'MLE', color: '#1a237e' },
+          'runtime_error': { label: 'RE', color: '#6f42c1' },
+        };
+        const statusInfo = statusMap[d.status] || { label: d.status.toUpperCase(), color: '#6c757d' };
+        const timeStr = d.time_used !== null && d.time_used !== undefined ? `${d.time_used}ms` : '-ms';
+        const memStr = d.memory_used !== null && d.memory_used !== undefined ? `${(d.memory_used / 1024).toFixed(2)}MB` : '-MB';
+        
+        return `
+          <div style="background: ${statusInfo.color}; color: white; border-radius: 4px; padding: 0.8rem 1rem; min-width: 110px; text-align: center; font-size: 0.85rem;">
+            <div style="font-weight: bold; font-size: 0.75rem; opacity: 0.8;">#${idx + 1}</div>
+            <div style="font-size: 1.1rem; font-weight: bold; margin: 0.2rem 0;">${statusInfo.label}</div>
+            <div style="font-size: 0.7rem; opacity: 0.9;">${timeStr}</div>
+            <div style="font-size: 0.7rem; opacity: 0.9;">${memStr}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
     // 代码仅当是自己或管理员才显示
-    // const user = getUserInfo();
     if (user && (user.uid === data.uid || user.isAdmin)) {
       document.getElementById('code-content').textContent = data.code || '（无代码）';
     } else {
