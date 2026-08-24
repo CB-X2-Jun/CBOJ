@@ -30,11 +30,11 @@
     </div>
   </div>
   <script type="module">
-    import { register, getUserInfo } from '/js/api.js';
+    import { register, login, getUserInfo } from '/js/api.js';
     const nav = document.getElementById('navbar');
     const user = getUserInfo();
     if (user) location.href = '/index.html';
-    nav.innerHTML = `<div class="logo"><span>C</span>BOJ</div><div><a href="/index.html">首页</a></div><div class="right"><a href="/login.html">登录</a><a href="/register.html">注册</a></div>`;
+    nav.innerHTML = `<div class="logo"><span>CB</span>OJ</div><div><a href="/index.html">首页</a></div><div class="right"><a href="/login.html">登录</a><a href="/register.html">注册</a></div>`;
 
     document.getElementById('register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
