@@ -121,6 +121,9 @@
         // 显示题目信息
         document.getElementById('problem-content').innerHTML = `
           <h1>${problem.id}. ${problem.title}</h1>
+          <p style="color: #6c757d; margin-bottom: 0.5rem;">
+            难度: ${problem.difficulty || '入门'} | 总分: ${problem.total_score || 100}
+          </p>
           <div class="card" style="margin-top: 1rem;">${html}</div>
           <p style="margin-top: 1rem;">时间限制: ${problem.time_limit}ms | 内存限制: ${problem.memory_limit}MB</p>
         `;
