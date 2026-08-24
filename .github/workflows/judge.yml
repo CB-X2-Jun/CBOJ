@@ -132,6 +132,9 @@ jobs:
           CALLBACK_URL: ${{ github.event.client_payload.callbackUrl }}
         run: |
           set +e
+          # 获取总分
+          TOTAL_SCORE=${{ github.event.client_payload.totalScore }}
+          [ -z "$TOTAL_SCORE" ] && TOTAL_SCORE=100
           CODE_RAW=$(echo "$CODE" | jq -r '.')
           
           # ---------- 内存限制倍率 ----------
@@ -377,12 +380,14 @@ jobs:
             fi
           fi
 
-          # ---------- 测试循环（使用 timeout，稳定可靠） ----------
+          # ---------- 测试循环（收集每个测试点详情） ----------
           TOTAL_TIME=0
           MAX_MEM=0
           STATUS="accepted"
+          TEST_DETAILS=()  # 用于存储每个测试点的详情
 
           echo "$TEST_CASES" | jq -c '.[]' > /tmp/test_cases.txt
+          TEST_INDEX=1
           while read -r test; do
             INPUT=$(echo "$test" | jq -r '.input')
             EXPECTED=$(echo "$test" | jq -r '.output')
@@ -400,10 +405,9 @@ jobs:
             # 使用 timeout 运行用户程序，内置沙箱限制
             timeout --signal=SIGTERM ${HARD_TIMEOUT_SEC}s \
               bash -c "
-                ulimit -f 102400   # 文件大小限制 100MB
-                ulimit -u 128      # 最大进程数 128
-                ulimit -c 0        # 禁止 core dump
-                # 不设 ulimit -v，避免破坏 JVM/Clojure 等
+                ulimit -f 102400
+                ulimit -u 128
+                ulimit -c 0
                 exec /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
               " > "$OUT_FILE" 2> "$ERR_FILE"
 
@@ -412,10 +416,8 @@ jobs:
             TIME_USED=$(( (END - START) / 1000000 ))
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
-            # 解析内存统计：只保留纯数字行
             MEM_USED=$(grep -E '^[0-9]+$' "$MEM_FILE" 2>/dev/null | tail -1)
             if ! [[ "$MEM_USED" =~ ^[0-9]+$ ]]; then
-              echo "WARNING: invalid memory statistic: $(cat "$MEM_FILE" 2>/dev/null)"
               MEM_USED=0
             fi
             [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
@@ -423,14 +425,42 @@ jobs:
             OUTPUT=$(cat "$OUT_FILE" 2>/dev/null | sed -e 's/[[:space:]]*$//')
             EXPECTED=$(echo "$EXPECTED" | sed -e 's/[[:space:]]*$//')
 
+            # 判断该测试点的状态
+            if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
+              TEST_STATUS="memory_limit_exceeded"
+            elif [ "$EXIT_CODE" -eq 124 ]; then
+              TEST_STATUS="time_limit_exceeded"
+            elif [ "$TIME_USED" -gt "$REAL_TIME_LIMIT" ]; then
+              TEST_STATUS="time_limit_exceeded"
+            elif [ "$EXIT_CODE" -ne 0 ]; then
+              TEST_STATUS="runtime_error"
+            elif [ "$OUTPUT" != "$EXPECTED" ]; then
+              TEST_STATUS="wrong_answer"
+            else
+              TEST_STATUS="accepted"
+            fi
+
+            # 如果某个测试点不是 accepted，整体状态变为该状态
+            if [ "$TEST_STATUS" != "accepted" ]; then
+              STATUS="$TEST_STATUS"
+            fi
+
+            # 收集测试点详情
+            TEST_DETAILS_JSON=$(jq -n \
+              --arg status "$TEST_STATUS" \
+              --arg time_used "$TIME_USED" \
+              --arg memory_used "$MEM_USED" \
+              '{status: $status, time_used: ($time_used | tonumber), memory_used: ($memory_used | tonumber)}')
+            TEST_DETAILS+=("$TEST_DETAILS_JSON")
+
             echo "========== DEBUG =========="
+            echo "TEST_INDEX=$TEST_INDEX"
             echo "EXIT_CODE=$EXIT_CODE"
             echo "TIME_USED=${TIME_USED}ms"
             echo "REAL_TIME_LIMIT=${REAL_TIME_LIMIT}ms"
             echo "HARD_TIMEOUT_MS=${HARD_TIMEOUT_MS}ms"
             echo "MEM_USED=${MEM_USED}KB"
-            echo "ORIGINAL_MEM_LIMIT=${ORIGINAL_MEM_KB}KB"
-            echo "REAL_MEM_LIMIT=${REAL_MEM_KB}KB"
+            echo "TEST_STATUS=$TEST_STATUS"
             echo "STDOUT:"
             cat "$OUT_FILE" 2>/dev/null || true
             echo "STDERR:"
@@ -438,27 +468,22 @@ jobs:
             echo "=========================="
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE" "$INPUT_FILE"
-
-            # 状态判断顺序：MLE > TLE > RE > WA
-            if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
-              STATUS="memory_limit_exceeded"
-              break
-            elif [ "$EXIT_CODE" -eq 124 ]; then
-              STATUS="time_limit_exceeded"
-              break
-            elif [ "$TIME_USED" -gt "$REAL_TIME_LIMIT" ]; then
-              # 即使未超时，若实际时间超过 REAL_TIME_LIMIT 也判 TLE（兜底）
-              STATUS="time_limit_exceeded"
-              break
-            elif [ "$EXIT_CODE" -ne 0 ]; then
-              STATUS="runtime_error"
-              break
-            elif [ "$OUTPUT" != "$EXPECTED" ]; then
-              STATUS="wrong_answer"
-              break
-            fi
+            TEST_INDEX=$((TEST_INDEX + 1))
           done < /tmp/test_cases.txt
 
-          MAX_MEM_MB=$(python3 -c "print(round($MAX_MEM/1024, 2))")
-          curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-            -d "{\"rid\":$RID,\"status\":\"$STATUS\",\"time_used\":$TOTAL_TIME,\"memory_used\":$MAX_MEM_MB}" || true
+          # 构建测试点详情 JSON 数组
+          DETAILS_JSON=$(printf '%s\n' "${TEST_DETAILS[@]}" | jq -s '.')
+
+          # 构建回调数据（包含每个测试点的详情）
+          CALLBACK_DATA=$(jq -n \
+            --arg rid "$RID" \
+            --arg status "$STATUS" \
+            --arg time_used "$TOTAL_TIME" \
+            --arg memory_used "$MAX_MEM" \
+            --argjson details "$DETAILS_JSON" \
+            --arg total_score "$TOTAL_SCORE" \
+            '{rid: ($rid | tonumber), status: $status, time_used: ($time_used | tonumber), memory_used: ($memory_used | tonumber), details: $details, total_score: ($total_score | tonumber)}')
+
+          echo "Callback data: $CALLBACK_DATA"
+
+          curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" -d "$CALLBACK_DATA" || true
