@@ -138,12 +138,22 @@ jobs:
           CODE_RAW=$(echo "$CODE" | jq -r '.')
           
           # ---------- 从 Worker 拉取测试用例 ----------
+          # 从 Worker 拉取测试用例
           PROBLEM_ID="${{ github.event.client_payload.problemId }}"
-          TEST_CASES=$(curl -s "https://ojapi.x2cb.cc.cd/api/problem/${PROBLEM_ID}/testcases")
-          if [ -z "$TEST_CASES" ] || [ "$TEST_CASES" = "null" ]; then
-            echo "Error: Failed to fetch test cases"
+          CALLBACK_BASE="https://ojapi.x2cb.cc.cd"
+          TEST_CASES=$(curl -s "${CALLBACK_BASE}/api/problem/${PROBLEM_ID}/testcases")
+
+          # 如果返回的是完整题目对象，提取 test_cases
+          if echo "$TEST_CASES" | jq -e '.test_cases' > /dev/null 2>&1; then
+            TEST_CASES=$(echo "$TEST_CASES" | jq -r '.test_cases')
+          fi
+
+          # 校验是否为数组
+          if ! echo "$TEST_CASES" | jq -e '. | type == "array"' > /dev/null 2>&1; then
+            echo "ERROR: TEST_CASES is not a valid JSON array"
+            echo "Content: $TEST_CASES"
             curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
-              -d "{\"rid\":$RID,\"status\":\"system_error\",\"result\":\"Failed to fetch test cases\"}" || true
+              -d "{\"rid\":$RID,\"status\":\"system_error\",\"result\":\"Invalid test cases format\"}" || true
             exit 0
           fi
           
