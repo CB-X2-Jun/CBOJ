@@ -83,7 +83,7 @@ jobs:
             "F#") sudo apt-get install -y fsharp ;;
             "D") sudo apt-get install -y gdc ;;
             "Objective-C"|"Objective-C++") sudo apt-get install -y clang ;;
-            "Powershell") sudo apt-get install -y powershell ;;
+            # "Powershell") sudo apt-get install -y powershell ;;
             "Eiffel")
               wget -q https://www.eiffel.com/cdn/EiffelStudio/25.12/98922/Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
               tar -xjf Eiffel_25.12_rev_98922-linux-x86-64.tar.bz2
@@ -153,7 +153,7 @@ jobs:
             "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
-            "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
+            # "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
             "Haskell") LANG_TIME_MULTIPLIER=1.5 ;;
             "Swift") LANG_TIME_MULTIPLIER=1.2 ;;
@@ -357,8 +357,8 @@ jobs:
             "Objective-C++") EXT="mm"; COMPILE="clang++ -O2 main.mm -o program"; RUN_CMD="./program" ;;
             "Dart") EXT="dart"; COMPILE=""; RUN_CMD="dart run main.dart" ;;
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
-            "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex -interaction=batchmode main.tex" ;;
-            "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
+            "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex main.tex" ;;
+            # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
