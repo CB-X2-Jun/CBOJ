@@ -359,7 +359,7 @@ jobs:
             fi
           fi
 
-          # ---------- 测试循环（使用进程组监控，沙箱限制仅针对用户程序） ----------
+          # ---------- 测试循环（使用 timeout，稳定可靠） ----------
           TOTAL_TIME=0
           MAX_MEM=0
           STATUS="accepted"
@@ -376,61 +376,26 @@ jobs:
 
             START=$(date +%s%N)
 
-            # 用户程序执行块：
-            # 1. set +e 避免 SIGSEGV 导致整个 step 退出
-            # 2. ulimit 限制用户程序（不影响外层 judge）
-            # 3. exec /usr/bin/time 让 $! 指向 time 进程，PGID 稳定
-            setsid bash -c "
-              set +e
-              ulimit -f 102400   # 文件大小限制 100MB
-              ulimit -u 128      # 最大进程数 128
-              ulimit -c 0        # 禁止 core dump
-              # 不设 ulimit -v，避免破坏 JVM/Clojure 等
-              exec /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
-            " > "$OUT_FILE" 2> "$ERR_FILE" &
-            PID=$!
+            # 使用 timeout 运行用户程序，内置沙箱限制
+            # timeout 退出码：124 表示超时，其他为程序退出码
+            timeout --signal=SIGTERM ${HARD_TIMEOUT_MS}ms \
+              bash -c "
+                ulimit -f 102400   # 文件大小限制 100MB
+                ulimit -u 128      # 最大进程数 128
+                ulimit -c 0        # 禁止 core dump
+                # 不设 ulimit -v，避免破坏 JVM/Clojure 等
+                exec /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
+              " > "$OUT_FILE" 2> "$ERR_FILE"
 
-            # 获取进程组 ID（此时 PID 即 session leader）
-            sleep 0.05
-            PGID=$(ps -o pgid= -p $PID 2>/dev/null | tr -d ' ')
-            # 如果 PGID 获取失败，设为 0（后续 kill 会跳过）
-            [ -z "$PGID" ] && PGID=0
-
-            KILLED=0
-
-            # 监控整个进程组
-            while kill -0 -$PGID 2>/dev/null; do
-              NOW=$(date +%s%N)
-              ELAPSED=$(( (NOW - START) / 1000000 ))
-              if [ $ELAPSED -gt $HARD_TIMEOUT_MS ]; then
-                # 防止 PGID 为 0 或 1 导致误杀
-                if [[ "$PGID" =~ ^[0-9]+$ ]] && [ "$PGID" -gt 1 ]; then
-                  kill -- -$PGID 2>/dev/null
-                  sleep 0.1
-                  kill -- -$PGID 2>/dev/null
-                else
-                  # fallback：直接杀 PID
-                  kill -TERM $PID 2>/dev/null
-                  sleep 0.1
-                  kill -KILL $PID 2>/dev/null
-                fi
-                KILLED=1
-                break
-              fi
-              sleep 0.01
-            done
-
-            # 等待进程结束，使用 || 捕获退出码（避免 set -e 导致整个 step 终止）
-            EXIT_CODE=0
-            wait $PID 2>/dev/null || EXIT_CODE=$?
-
+            EXIT_CODE=$?
             END=$(date +%s%N)
             TIME_USED=$(( (END - START) / 1000000 ))
             TOTAL_TIME=$((TOTAL_TIME + TIME_USED))
 
-            MEM_USED=$(cat "$MEM_FILE" 2>/dev/null | tr -d '\n')
-            if [ -z "$MEM_USED" ]; then
-              echo "WARNING: memory statistic unavailable"
+            # 解析内存统计：只保留纯数字行
+            MEM_USED=$(grep -E '^[0-9]+$' "$MEM_FILE" 2>/dev/null | tail -1)
+            if ! [[ "$MEM_USED" =~ ^[0-9]+$ ]]; then
+              echo "WARNING: invalid memory statistic: $(cat "$MEM_FILE" 2>/dev/null)"
               MEM_USED=0
             fi
             [ "$MEM_USED" -gt "$MAX_MEM" ] && MAX_MEM=$MEM_USED
@@ -446,8 +411,6 @@ jobs:
             echo "MEM_USED=${MEM_USED}KB"
             echo "ORIGINAL_MEM_LIMIT=${ORIGINAL_MEM_KB}KB"
             echo "REAL_MEM_LIMIT=${REAL_MEM_KB}KB"
-            echo "KILLED=$KILLED"
-            echo "PGID=$PGID"
             echo "STDOUT:"
             cat "$OUT_FILE" 2>/dev/null || true
             echo "STDERR:"
@@ -456,14 +419,15 @@ jobs:
 
             rm -f "$OUT_FILE" "$ERR_FILE" "$MEM_FILE" "$INPUT_FILE"
 
-            # 状态判断：MLE（RSS 超限 或 137 且非 KILLED）、TLE（KILLED 或 TIME_USED > REAL_TIME_LIMIT）、RE、WA
+            # 状态判断顺序：MLE > TLE > RE > WA
             if [ "$MEM_USED" -gt "$REAL_MEM_KB" ]; then
               STATUS="memory_limit_exceeded"
               break
-            elif [ "$EXIT_CODE" -eq 137 ] && [ "$KILLED" -eq 0 ]; then
-              STATUS="memory_limit_exceeded"
+            elif [ "$EXIT_CODE" -eq 124 ]; then
+              STATUS="time_limit_exceeded"
               break
-            elif [ "$KILLED" -eq 1 ] || [ "$TIME_USED" -gt "$REAL_TIME_LIMIT" ]; then
+            elif [ "$TIME_USED" -gt "$REAL_TIME_LIMIT" ]; then
+              # 即使未超时，若实际时间超过 REAL_TIME_LIMIT 也判 TLE（兜底）
               STATUS="time_limit_exceeded"
               break
             elif [ "$EXIT_CODE" -ne 0 ]; then
