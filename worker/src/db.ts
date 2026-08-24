@@ -2,7 +2,7 @@ export interface Env {
   DB: D1Database;
 }
 
-// 用户
+// ========== 用户 ==========
 export async function getUserByUsername(username: string, env: Env) {
   return await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
 }
@@ -19,9 +19,9 @@ export async function createUser(username: string, passwordHash: string, nicknam
   return uid;
 }
 
-// 题目
+// ========== 题目 ==========
 export async function getProblems(env: Env) {
-  return await env.DB.prepare('SELECT id, title, difficulty, time_limit, memory_limit FROM problems ORDER BY id').all();
+  return await env.DB.prepare('SELECT id, title, time_limit, memory_limit FROM problems ORDER BY id').all();
 }
 
 export async function getProblem(id: string, env: Env) {
@@ -42,16 +42,28 @@ export async function deleteProblem(id: string, env: Env) {
   await env.DB.prepare('DELETE FROM problems WHERE id = ?').bind(id).run();
 }
 
-// 提交
-export async function createSubmission(rid: number, uid: number, problemId: string, language: string, code: string, env: Env) {
-  await env.DB.prepare('INSERT INTO submissions (rid, uid, problem_id, language, code, status) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(rid, uid, problemId, language, code, 'pending').run();
-  return rid;
+// ========== 提交 ==========
+export async function getMaxRid(env: Env): Promise<number> {
+  const result = await env.DB.prepare('SELECT MAX(rid) as max FROM submissions').first() as { max: number | null };
+  return result?.max ?? 0;  // 确保永远返回数字，不为 undefined
 }
 
-export async function getMaxRid(env: Env) {
-  const result = await env.DB.prepare('SELECT MAX(rid) as max FROM submissions').first() as { max: number };
-  return result?.max || 0;
+export async function createSubmission(rid: number, uid: number, problemId: string, language: string, code: string, env: Env) {
+  // 参数校验，防止 undefined 或 null
+  if (rid === undefined || rid === null || isNaN(rid)) {
+    throw new Error('Invalid rid: ' + rid);
+  }
+  if (uid === undefined || uid === null || isNaN(uid)) {
+    throw new Error('Invalid uid: ' + uid);
+  }
+  if (!problemId) throw new Error('Missing problemId');
+  if (!language) throw new Error('Missing language');
+  if (!code) throw new Error('Missing code');
+
+  await env.DB.prepare(
+    'INSERT INTO submissions (rid, uid, problem_id, language, code, status) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(rid, uid, problemId, language, code, 'pending').run();
+  return rid;
 }
 
 export async function getSubmissions(env: Env, limit: number, offset: number) {
@@ -97,7 +109,7 @@ export async function getSubmissionsByProblem(problemId: string, env: Env) {
   ).bind(problemId).all();
 }
 
-// 排行榜
+// ========== 排行榜 ==========
 export async function getRank(env: Env) {
   return await env.DB.prepare(
     `SELECT u.uid, u.username, u.nickname,
@@ -111,7 +123,7 @@ export async function getRank(env: Env) {
   ).all();
 }
 
-// 比赛
+// ========== 比赛 ==========
 export async function getContests(env: Env) {
   return await env.DB.prepare('SELECT id, title, start_time, end_time FROM contests ORDER BY id').all();
 }

@@ -1,9 +1,9 @@
-import { handleAuth, handleRegister, handleLogin } from './routes/auth';
+import { handleRegister, handleLogin } from './routes/auth';
 import { handleProblems, handleProblem, handleCreateProblem, handleUpdateProblem, handleDeleteProblem } from './routes/problems';
-import { handleSubmit, handleSubmission, handleSubmissions, handleCallback } from './routes/submissions';
+import { handleSubmit, handleSubmission, handleSubmissions, handleCallback, handleCancelSubmission } from './routes/submissions';
 import { handleRank } from './routes/rank';
 import { handleContests, handleContest, handleCreateContest, handleUpdateContest, handleDeleteContest, handleJoinContest } from './routes/contests';
-import { verifyToken, isAdmin } from './auth';
+import { verifyToken } from './auth';
 
 export interface Env {
   DB: D1Database;
@@ -21,102 +21,155 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
-    // CORS
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
-    if (method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-    // 公开路由（不需要登录）
-    if (path === '/api/auth/register' && method === 'POST') return await handleRegister(request, env);
-    if (path === '/api/auth/login' && method === 'POST') return await handleLogin(request, env);
-    if (path === '/api/problems' && method === 'GET') return await handleProblems(env);
-    if (path === '/api/rank' && method === 'GET') return await handleRank(env);
-    if (path === '/api/contests' && method === 'GET') return await handleContests(env);
-
-    // 需要登录
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-    }
-    const token = authHeader.slice(7);
-    const payload = await verifyToken(token, env.JWT_SECRET);
-    if (!payload) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-    }
-    const uid = payload.uid;
-    const isAdminUser = isAdmin(uid, env.ADMIN_UID_LIST);
-
-    // 题目相关
-    if (path === '/api/problem/:id' && method === 'GET') {
-      const id = path.split('/')[3];
-      return await handleProblem(id, env);
-    }
-    if (path === '/api/problem' && method === 'POST') {
-      if (!isAdminUser) return forbidden();
-      return await handleCreateProblem(request, env);
-    }
-    if (path === '/api/problem/:id' && method === 'PUT') {
-      if (!isAdminUser) return forbidden();
-      const id = path.split('/')[3];
-      return await handleUpdateProblem(request, id, env);
-    }
-    if (path === '/api/problem/:id' && method === 'DELETE') {
-      if (!isAdminUser) return forbidden();
-      const id = path.split('/')[3];
-      return await handleDeleteProblem(id, env);
+    if (method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    // 提交相关
-    if (path === '/api/submit' && method === 'POST') {
-      return await handleSubmit(request, uid, env);
-    }
-    if (path === '/api/submissions' && method === 'GET') {
-      return await handleSubmissions(url, uid, env);
-    }
-    if (path === '/api/submission/:id' && method === 'GET') {
-      const id = path.split('/')[3];
-      return await handleSubmission(id, uid, isAdminUser, env);
-    }
-    if (path === '/api/callback' && method === 'POST') {
-      return await handleCallback(request, env);
-    }
-    if (path === '/api/submission/:id/cancel' && method === 'POST') {
-      if (!isAdminUser) return forbidden();
-      const id = path.split('/')[3];
-      return await handleCancelSubmission(id, env);
-    }
+    const json = (data: any, status = 200) => {
+      return new Response(JSON.stringify(data), {
+        status,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    };
 
-    // 比赛相关
-    if (path === '/api/contest/:id' && method === 'GET') {
-      const id = path.split('/')[3];
-      return await handleContest(id, env);
-    }
-    if (path === '/api/contest' && method === 'POST') {
-      if (!isAdminUser) return forbidden();
-      return await handleCreateContest(request, env);
-    }
-    if (path === '/api/contest/:id' && method === 'PUT') {
-      if (!isAdminUser) return forbidden();
-      const id = path.split('/')[3];
-      return await handleUpdateContest(request, id, env);
-    }
-    if (path === '/api/contest/:id' && method === 'DELETE') {
-      if (!isAdminUser) return forbidden();
-      const id = path.split('/')[3];
-      return await handleDeleteContest(id, env);
-    }
-    if (path === '/api/contest/:id/join' && method === 'POST') {
-      const id = path.split('/')[3];
-      return await handleJoinContest(id, uid, env);
-    }
+    try {
+      // ========== 公开路由 ==========
+      if (path === '/api/auth/register' && method === 'POST') {
+        return await handleRegister(request, env);
+      }
+      if (path === '/api/auth/login' && method === 'POST') {
+        return await handleLogin(request, env);
+      }
+      if (path === '/api/problems' && method === 'GET') {
+        return await handleProblems(env);
+      }
+      if (path === '/api/rank' && method === 'GET') {
+        return await handleRank(env);
+      }
+      if (path === '/api/contests' && method === 'GET') {
+        return await handleContests(env);
+      }
+      if (path === '/api/callback' && method === 'POST') {
+        return await handleCallback(request, env);
+      }
 
-    return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      // ========== 需要登录 ==========
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return json({ error: 'Unauthorized' }, 401);
+      }
+      const token = authHeader.slice(7);
+      const payload = await verifyToken(token, env.JWT_SECRET);
+      if (!payload) {
+        return json({ error: 'Invalid token' }, 401);
+      }
+      const uid = payload.uid;
+      const isAdminUser = payload.admin || false;
+
+      // ========== 题目相关 ==========
+      // 获取单个题目：GET /api/problem/xxx
+      if (path.startsWith('/api/problem/') && method === 'GET') {
+        const id = path.split('/')[3]; // 如 /api/problem/C1000 → ['', 'api', 'problem', 'C1000']
+        if (!id) return json({ error: 'Missing problem id' }, 400);
+        return await handleProblem(id, env);
+      }
+
+      // 创建题目：POST /api/problem
+      if (path === '/api/problem' && method === 'POST') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        return await handleCreateProblem(request, env);
+      }
+
+      // 更新题目：PUT /api/problem/xxx
+      if (path.startsWith('/api/problem/') && method === 'PUT') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        const id = path.split('/')[3];
+        if (!id) return json({ error: 'Missing problem id' }, 400);
+        return await handleUpdateProblem(request, id, env);
+      }
+
+      // 删除题目：DELETE /api/problem/xxx
+      if (path.startsWith('/api/problem/') && method === 'DELETE') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        const id = path.split('/')[3];
+        if (!id) return json({ error: 'Missing problem id' }, 400);
+        return await handleDeleteProblem(id, env);
+      }
+
+      // ========== 提交相关 ==========
+      if (path === '/api/submit' && method === 'POST') {
+        return await handleSubmit(request, uid, env);
+      }
+      if (path === '/api/submissions' && method === 'GET') {
+        return await handleSubmissions(url, uid, env);
+      }
+      if (path.startsWith('/api/submission/') && method === 'GET') {
+        const id = parseInt(path.split('/')[3]);
+        if (isNaN(id)) return json({ error: 'Invalid submission id' }, 400);
+        return await handleSubmission(id, uid, isAdminUser, env);
+      }
+      if (path.startsWith('/api/submission/') && method === 'POST') {
+        // 注意：取消提交的路由是 /api/submission/:id/cancel
+        if (path.endsWith('/cancel')) {
+          if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+          const parts = path.split('/');
+          const id = parseInt(parts[3]);
+          if (isNaN(id)) return json({ error: 'Invalid submission id' }, 400);
+          return await handleCancelSubmission(id, env);
+        }
+        // 其他 POST 到 /api/submission/xxx 暂不支持
+        return json({ error: 'Not Found' }, 404);
+      }
+
+      // ========== 比赛相关 ==========
+      // 获取比赛列表
+      if (path === '/api/contests' && method === 'GET') {
+        return await handleContests(env);
+      }
+      // 获取单个比赛
+      if (path.startsWith('/api/contest/') && method === 'GET') {
+        const id = parseInt(path.split('/')[3]);
+        if (isNaN(id)) return json({ error: 'Invalid contest id' }, 400);
+        return await handleContest(id, env);
+      }
+      // 创建比赛
+      if (path === '/api/contest' && method === 'POST') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        return await handleCreateContest(request, env);
+      }
+      // 更新比赛
+      if (path.startsWith('/api/contest/') && method === 'PUT') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        const id = parseInt(path.split('/')[3]);
+        if (isNaN(id)) return json({ error: 'Invalid contest id' }, 400);
+        return await handleUpdateContest(request, id, env);
+      }
+      // 删除比赛
+      if (path.startsWith('/api/contest/') && method === 'DELETE') {
+        if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
+        const id = parseInt(path.split('/')[3]);
+        if (isNaN(id)) return json({ error: 'Invalid contest id' }, 400);
+        return await handleDeleteContest(id, env);
+      }
+      // 参加比赛
+      if (path.startsWith('/api/contest/') && path.endsWith('/join') && method === 'POST') {
+        const parts = path.split('/');
+        const id = parseInt(parts[3]);
+        if (isNaN(id)) return json({ error: 'Invalid contest id' }, 400);
+        return await handleJoinContest(id, uid, env);
+      }
+
+      // 404
+      return json({ error: 'Not Found' }, 404);
+    } catch (error) {
+      console.error('Unhandled error:', error);
+      return json({ error: 'Internal Server Error: ' + String(error) }, 500);
+    }
   },
 };
-
-function forbidden() {
-  return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-}
