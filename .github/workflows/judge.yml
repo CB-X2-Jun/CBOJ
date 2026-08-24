@@ -98,11 +98,20 @@ jobs:
               "$EIFFEL_ROOT/studio/spec/linux-x86-64/bin/ec" -version
               ;;
             "Ceylon")
+              # 安装 Java 8 和 Ant（Ceylon 1.3.3 需要 Java 8）
               sudo apt-get install -y openjdk-8-jdk ant
-              echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
+              # 强制使用 Java 8
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+              export PATH=$JAVA_HOME/bin:$PATH
+              echo "Using Java 8 for Ceylon build:"
+              java -version
+              javac -version
+              # 克隆 Ceylon 源码
               git clone --depth 1 --branch _old/1.3.3 https://github.com/eclipse-archived/ceylon.git
               cd ceylon
+              # 构建
               ant clean dist
+              # 安装到 /opt/ceylon
               sudo mv dist/dist /opt/ceylon
               echo "CEYLON_HOME=/opt/ceylon" >> $GITHUB_ENV
               echo "/opt/ceylon/bin" >> $GITHUB_PATH
