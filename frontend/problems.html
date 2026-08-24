@@ -9,18 +9,23 @@
   <nav id="navbar"></nav>
   <div class="container">
     <h1>📚 题目列表</h1>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <input type="text" id="search-input" placeholder="搜索题号/标题/难度..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5da; border-radius: 6px;">
+      <button id="search-btn" class="btn" style="background: #28a745;">搜索</button>
+      <button id="clear-btn" class="btn" style="background: #6c757d;">清除</button>
+    </div>
     <table>
-      <thead><tr><th>题号</th><th>标题</th> <!--<th>难度</th> --><th>时间限制</th><th>内存限制</th></tr></thead>
+      <thead><tr><th>题号</th><th>标题</th><th>难度</th><th>总分</th><th>时间限制</th><th>内存限制</th></tr></thead>
       <tbody id="problem-list"></tbody>
     </table>
   </div>
   <script type="module">
     import { getProblems, getUserInfo } from '/js/api.js';
-    // 导航栏
+    
     const nav = document.getElementById('navbar');
     const user = getUserInfo();
     nav.innerHTML = `
-      <div class="logo"><span>CB</span>OJ</div>
+      <div class="logo"><span>C</span>BOJ</div>
       <div>
         <a href="/index.html">首页</a>
         <a href="/problems.html">题目</a>
@@ -35,21 +40,46 @@
       </div>
     `;
 
-    const data = await getProblems();
-    const tbody = document.getElementById('problem-list');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无题目</td></tr>';
-    } else {
-      tbody.innerHTML = data.map(p => `
-        <tr>
-          <td>${p.id}</td>
-          <td><a href="/problem.html?id=${p.id}">${p.title}</a></td>
-          <!-- <td>${p.difficulty || '未评级'}</td> -->
-          <td>${p.time_limit}ms</td>
-          <td>${p.memory_limit}MB</td>
-        </tr>
-      `).join('');
+    let currentKeyword = '';
+
+    async function loadProblems(keyword = '') {
+      const data = await getProblems(keyword);
+      const tbody = document.getElementById('problem-list');
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无题目</td></tr>';
+      } else {
+        tbody.innerHTML = data.map(p => `
+          <tr>
+            <td>${p.id}</td>
+            <td><a href="/problem.html?id=${p.id}">${p.title}</a></td>
+            <td>${p.difficulty || '入门'}</td>
+            <td>${p.total_score || 100}</td>
+            <td>${p.time_limit}ms</td>
+            <td>${p.memory_limit}MB</td>
+          </tr>
+        `).join('');
+      }
     }
+
+    await loadProblems();
+
+    document.getElementById('search-btn').addEventListener('click', () => {
+      const keyword = document.getElementById('search-input').value.trim();
+      currentKeyword = keyword;
+      loadProblems(keyword);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      document.getElementById('search-input').value = '';
+      currentKeyword = '';
+      loadProblems('');
+    });
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('search-btn').click();
+      }
+    });
   </script>
 </body>
 </html>
