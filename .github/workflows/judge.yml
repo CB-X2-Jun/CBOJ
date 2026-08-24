@@ -376,9 +376,11 @@ jobs:
 
             START=$(date +%s%N)
 
+            # 将 HARD_TIMEOUT_MS 转换为秒（浮点数）
+            HARD_TIMEOUT_SEC=$(python3 -c "print($HARD_TIMEOUT_MS/1000)")
+
             # 使用 timeout 运行用户程序，内置沙箱限制
-            # timeout 退出码：124 表示超时，其他为程序退出码
-            timeout --signal=SIGTERM ${HARD_TIMEOUT_MS}ms \
+            timeout --signal=SIGTERM ${HARD_TIMEOUT_SEC}s \
               bash -c "
                 ulimit -f 102400   # 文件大小限制 100MB
                 ulimit -u 128      # 最大进程数 128
