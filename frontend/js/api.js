@@ -82,8 +82,13 @@ export async function getProblems(keyword = '') {
 export async function submit(problemId, language, code) {
   return apiFetch('/submit', { method: 'POST', body: JSON.stringify({ problemId, language, code }) });
 }
-export async function getSubmissions(limit = 50, offset = 0) {
-  return apiFetch(`/submissions?limit=${limit}&offset=${offset}`);
+export async function getSubmissions(limit = 50, offset = 0, filters = {}) {
+  let url = `/submissions?limit=${limit}&offset=${offset}`;
+  if (filters.user) url += `&user=${encodeURIComponent(filters.user)}`;
+  if (filters.language) url += `&language=${encodeURIComponent(filters.language)}`;
+  if (filters.problem) url += `&problem=${encodeURIComponent(filters.problem)}`;
+  if (filters.status) url += `&status=${encodeURIComponent(filters.status)}`;
+  return apiFetch(url);
 }
 export async function getSubmission(rid) {
   return apiFetch(`/submission/${rid}`);
@@ -91,6 +96,7 @@ export async function getSubmission(rid) {
 export async function cancelSubmission(rid) {
   return apiFetch(`/submission/${rid}/cancel`, { method: 'POST' });
 }
+
 
 // 排行榜
 export async function getRank() {
