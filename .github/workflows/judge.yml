@@ -294,6 +294,12 @@ jobs:
               ;;
 
             "Ceylon")
+              # 强制使用 Java 8
+              export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+              export PATH=$JAVA_HOME/bin:$PATH
+              # 验证 Java 版本（调试用）
+              echo "Using Java:"
+              java -version
               mkdir -p source/cboj
               echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
               echo "$CODE_RAW" > source/cboj/run.ceylon
