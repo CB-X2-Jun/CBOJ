@@ -9,16 +9,34 @@
   <nav id="navbar"></nav>
   <div class="container">
     <h1>📊 评测记录</h1>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+      <input type="text" id="filter-user" placeholder="用户..." style="flex: 1; min-width: 100px; padding: 0.5rem; border: 1px solid #d1d5da; border-radius: 6px;">
+      <input type="text" id="filter-language" placeholder="语言..." style="flex: 1; min-width: 100px; padding: 0.5rem; border: 1px solid #d1d5da; border-radius: 6px;">
+      <input type="text" id="filter-problem" placeholder="题目..." style="flex: 1; min-width: 100px; padding: 0.5rem; border: 1px solid #d1d5da; border-radius: 6px;">
+      <select id="filter-status" style="padding: 0.5rem; border: 1px solid #d1d5da; border-radius: 6px;">
+        <option value="">全部状态</option>
+        <option value="accepted">Accepted</option>
+        <option value="pending">Pending</option>
+        <option value="wrong_answer">Wrong Answer</option>
+        <option value="time_limit_exceeded">Time Limit Exceeded</option>
+        <option value="memory_limit_exceeded">Memory Limit Exceeded</option>
+        <option value="system_error">System Error</option>
+        <option value="compile_error">Compile Error</option>
+        <option value="runtime_error">Runtime Error</option>
+        <option value="unaccepted">未通过（含上述六种）</option>
+      </select>
+      <button id="filter-btn" class="btn" style="background: #28a745;">筛选</button>
+      <button id="clear-filter-btn" class="btn" style="background: #6c757d;">清除</button>
+    </div>
     <table>
-      <thead><tr><th>RID</th><th>用户</th><th>题目</th><th>语言</th><th>状态</th><th>耗时</th><th>内存</th><th>提交时间</th></tr></thead>
+      <thead><tr><th>RID</th><th>用户</th><th>题目</th><th>语言</th><th>状态</th><th>分数</th><th>耗时</th><th>内存</th><th>提交时间</th></tr></thead>
       <tbody id="submission-body"></tbody>
     </table>
     <div class="pagination" id="pagination"></div>
   </div>
   <script type="module">
-    import { getSubmissions, getUserInfo, logout } from '/js/api.js';
-    // 导航栏（同上，略，可复用代码）
-    // 实际使用时建议把导航栏渲染抽成单独模块，但这里为了完整性直接写
+    import { getSubmissions, getUserInfo } from '/js/api.js';
+
     const user = getUserInfo();
     const nav = document.getElementById('navbar');
     nav.innerHTML = `
@@ -34,39 +52,85 @@
       <div class="right">
         ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="localStorage.removeItem('token'); window.location.href='/index.html'">退出</button>` 
                 : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
-      </div>`; // 同前
+      </div>
+    `;
 
-    const params = new URLSearchParams(location.search);
-    const page = parseInt(params.get('page')) || 1;
-    const limit = 50;
-    const offset = (page - 1) * limit;
+    let currentFilters = {};
 
-    const data = await getSubmissions(limit, offset);
-    const tbody = document.getElementById('submission-body');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无提交记录</td></tr>';
-    } else {
-      tbody.innerHTML = data.map(s => `
-        <tr>
-          <td><a href="/submission.html?rid=${s.rid}">${s.rid}</a></td>
-          <td>${s.username}</td>
-          <td><a href="/problem.html?id=${s.problem_id}">${s.problem_id}</a></td>
-          <td>${s.language}</td>
-          <td class="status-${s.status}">${s.status}</td>
-          <td>${s.time_used ?? '-'}ms</td>
-          <td>${s.memory_used ?? '-'}MB</td>
-          <td>${new Date(s.created_at).toLocaleString()}</td>
-        </tr>
-      `).join('');
+    async function loadSubmissions(filters = {}, page = 1) {
+      const limit = 50;
+      const offset = (page - 1) * limit;
+      let url = `/submissions?limit=${limit}&offset=${offset}`;
+      
+      if (filters.user) url += `&user=${encodeURIComponent(filters.user)}`;
+      if (filters.language) url += `&language=${encodeURIComponent(filters.language)}`;
+      if (filters.problem) url += `&problem=${encodeURIComponent(filters.problem)}`;
+      if (filters.status) url += `&status=${encodeURIComponent(filters.status)}`;
+
+      const data = await getSubmissions(limit, offset, filters);
+      const tbody = document.getElementById('submission-body');
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">暂无提交记录</td></tr>';
+      } else {
+        tbody.innerHTML = data.map(s => `
+          <tr>
+            <td><a href="/submission.html?rid=${s.rid}">${s.rid}</a></td>
+            <td>${s.username}</td>
+            <td><a href="/problem.html?id=${s.problem_id}">${s.problem_id}</a></td>
+            <td>${s.language}</td>
+            <td class="status-${s.status}">${s.status}</td>
+            <td>${s.score !== undefined && s.score !== null ? s.score + '/' + (s.max_score || 100) : '不可用'}</td>
+            <td>${s.time_used ?? '-'}ms</td>
+            <td>${s.memory_used ?? '-'}MB</td>
+            <td>${new Date(s.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 分页
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = `
+        <a href="?page=${Math.max(1, page-1)}">上一页</a>
+        <span class="active">${page}</span>
+        <a href="?page=${page+1}">下一页</a>
+      `;
     }
 
-    // 简单分页
-    const pagination = document.getElementById('pagination');
-    pagination.innerHTML = `
-      <a href="?page=${Math.max(1, page-1)}">上一页</a>
-      <span class="active">${page}</span>
-      <a href="?page=${page+1}">下一页</a>
-    `;
+    // 加载初始数据
+    await loadSubmissions({}, 1);
+
+    document.getElementById('filter-btn').addEventListener('click', () => {
+      const filters = {
+        user: document.getElementById('filter-user').value.trim(),
+        language: document.getElementById('filter-language').value.trim(),
+        problem: document.getElementById('filter-problem').value.trim(),
+        status: document.getElementById('filter-status').value,
+      };
+      // 移除空值
+      Object.keys(filters).forEach(key => {
+        if (!filters[key]) delete filters[key];
+      });
+      currentFilters = filters;
+      loadSubmissions(filters, 1);
+    });
+
+    document.getElementById('clear-filter-btn').addEventListener('click', () => {
+      document.getElementById('filter-user').value = '';
+      document.getElementById('filter-language').value = '';
+      document.getElementById('filter-problem').value = '';
+      document.getElementById('filter-status').value = '';
+      currentFilters = {};
+      loadSubmissions({}, 1);
+    });
+
+    // 回车触发筛选
+    ['filter-user', 'filter-language', 'filter-problem'].forEach(id => {
+      document.getElementById(id).addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('filter-btn').click();
+        }
+      });
+    });
   </script>
 </body>
 </html>
