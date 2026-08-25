@@ -36,7 +36,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/erlang/erlang.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/tcl/tcl.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/commonlisp/commonlisp.min.js"></script>
+  <script sre="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/d/d.min.js"></script>
   <!-- 可能缺失的模式，可以回退到 plain -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
     .CodeMirror { height: auto; min-height: 300px; border: 1px solid #d1d5da; border-radius: 6px; font-size: 14px; }
     .CodeMirror-scroll { min-height: 300px; }
@@ -166,6 +169,11 @@
           <div class="card" style="margin-top: 1rem;">${html}</div>
           <p style="margin-top: 1rem;">时间限制: ${problem.time_limit}ms | 内存限制: ${problem.memory_limit}MB</p>
         `;
+        setTimeout(() => {
+          document.querySelectorAll('#problem-content pre code').forEach((block) => {
+            hljs.highlightElement(block);
+          });
+        }, 50);
         setTimeout(() => {
           if (typeof renderMathInElement === 'function') {
             renderMathInElement(document.getElementById('problem-content'), {
