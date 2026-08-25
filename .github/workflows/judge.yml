@@ -182,6 +182,7 @@ jobs:
             # "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
             "Haskell") LANG_TIME_MULTIPLIER=1.5 ;;
+            "Logo") LANG_TIME_MULTIPLIER=2.5 ;;
             "Swift") LANG_TIME_MULTIPLIER=1.2 ;;
             *) LANG_TIME_MULTIPLIER=1.0 ;;
           esac
