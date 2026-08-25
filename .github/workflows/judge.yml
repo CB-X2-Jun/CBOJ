@@ -116,7 +116,8 @@ jobs:
               echo "CEYLON_HOME=/opt/ceylon" >> $GITHUB_ENV
               echo "/opt/ceylon/bin" >> $GITHUB_PATH
               ;;
-            "Logo") sudo apt-get install -y ucblogo xvfb ;;
+            # "Logo") sudo apt-get install -y ucblogo xvfb ;;
+            "Elixir") sudo apt-get install -y elixir ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -164,6 +165,7 @@ jobs:
             "Julia") MEM_MULTIPLIER=8 ;;
             "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure"|"Ceylon") MEM_MULTIPLIER=5 ;;
             "Haskell"|"Swift"|"Erlang") MEM_MULTIPLIER=3 ;;
+            "Elixir") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
           
@@ -178,7 +180,8 @@ jobs:
             "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
             "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
-            "Erlang") LANG_TIME_MULTIPLIER=2.5 ;;
+            "Elixir") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Erlang") LANG_TIME_MULTIPLIER=3.0 ;;
             # "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
             "Haskell") LANG_TIME_MULTIPLIER=1.5 ;;
@@ -386,7 +389,8 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex main.tex" ;;
             # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
-            "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
+            # "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
+            "Elixir") EXT="exs"; COMPILE=""; RUN_CMD="elixir main.exs" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
