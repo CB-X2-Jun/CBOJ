@@ -385,7 +385,7 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex main.tex" ;;
             # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
-            "Logo") EXT="lg"; COMPILE=""; RUN_CMD="logo -n main.lg" ;;
+            "Logo") EXT="lg"; COMPILE=""; RUN_CMD="logo -batch -n main.lg" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
