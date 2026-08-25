@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBOJ - 用户指引</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .guide-section {
+      margin-bottom: 2.5rem;
+    }
+    .guide-section h2 {
+      border-bottom: 2px solid #e1e4e8;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    .guide-section h3 {
+      font-size: 1.15rem;
+      margin: 1.2rem 0 0.6rem 0;
+      color: #24292e;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.8rem;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.8rem;
+      background: #f6f8fa;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .status-dot.accepted { background: #28a745; }
+    .status-dot.wrong_answer { background: #d73a49; }
+    .status-dot.time_limit_exceeded { background: #1a237e; }
+    .status-dot.memory_limit_exceeded { background: #1a237e; }
+    .status-dot.runtime_error { background: #6f42c1; }
+    .status-dot.compile_error { background: #d73a49; }
+    .status-dot.pending { background: #f0ad4e; }
+    .status-dot.compiling { background: #5bc0de; }
+    .status-dot.running { background: #5bc0de; }
+    .status-dot.system_error { background: #6c757d; }
+    .status-dot.cancelled { background: #6c757d; }
+    .status-dot.unaccepted { background: #d73a49; }
+
+    .lang-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .lang-table th {
+      background: #f1f3f5;
+      font-weight: 600;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 2px solid #e1e4e8;
+    }
+    .lang-table td {
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px solid #eaeef2;
+      vertical-align: top;
+    }
+    .lang-table tr:hover {
+      background: #f6f8fa;
+    }
+    .lang-table .lang-name {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .lang-table .lang-note {
+      color: #24292e;
+    }
+    .lang-table .lang-note code {
+      background: #f1f3f5;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.85rem;
+    }
+
+    .multiplier-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .multiplier-table th {
+      background: #f1f3f5;
+      font-weight: 600;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 2px solid #e1e4e8;
+    }
+    .multiplier-table td {
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px solid #eaeef2;
+    }
+    .multiplier-table tr:hover {
+      background: #f6f8fa;
+    }
+    .multiplier-table .highlight-jvm {
+      background: #fef9e7;
+    }
+    .multiplier-table .highlight-heavy {
+      background: #fdf2e9;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-ok { background: #d4edda; color: #155724; }
+    .badge-warn { background: #fff3cd; color: #856404; }
+    .badge-danger { background: #f8d7da; color: #721c24; }
+
+    .note-box {
+      background: #fef9e7;
+      border-left: 4px solid #f0b400;
+      padding: 0.8rem 1.2rem;
+      border-radius: 4px;
+      margin: 0.8rem 0;
+    }
+    .note-box strong {
+      color: #24292e;
+    }
+
+    @media (max-width: 768px) {
+      .status-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+      .lang-table,
+      .multiplier-table {
+        font-size: 0.8rem;
+      }
+      .lang-table .lang-name {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav id="navbar"></nav>
+  <div class="container">
+    <h1>📖 CBOJ 用户指引</h1>
+    <p style="color: #6c757d; margin-bottom: 2rem;">
+      欢迎来到 CBOJ！这里整理了判题状态含义、语言注意事项、以及「代码人道主义」的放宽规则。</p>
+    <p>如果您还有要问的，或者系统出现问题，请联系管理员 CB-X2-Jun，邮箱 <a href="mailto:cbx2jun@cc.cc">cbx2jun@cc.cc</a>（不一定会看），洛谷 <a href="https://www.luogu.com.cn/user/1219707" target="_blank">UID 1219707</a>，GitHub 为 <a href="https://github.com/CB-X2-Jun" target="_blank">CB-X2-Jun</a>。</p>
+    <p>我们欢迎您加入官方 QQ 群，群号 784244286。</p>
+
+    <!-- ============================================================ -->
+    <!-- 第一部分：判题状态 -->
+    <!-- ============================================================ -->
+    <section class="guide-section">
+      <h2>📊 判题状态说明</h2>
+      <p style="margin-bottom: 1rem;">你的提交会经过评测系统，最终显示以下状态之一：</p>
+
+      <div class="status-grid">
+        <div class="status-item"><span class="status-dot accepted"></span> <strong>Accepted (AC)</strong> — 通过：您的代码运行正常且输出了正确内容。</div>
+        <div class="status-item"><span class="status-dot wrong_answer"></span> <strong>Wrong Answer (WA)</strong> — 答案错误：您的代码运行正常，但输出了错误的内容。</div>
+        <div class="status-item"><span class="status-dot time_limit_exceeded"></span> <strong>Time Limit Exceeded (TLE)</strong> — 超时：您的代码运行时长太长，超过了时限。</div>
+        <div class="status-item"><span class="status-dot memory_limit_exceeded"></span> <strong>Memory Limit Exceeded (MLE)</strong> — 超过内存限制：您的代码占了太多内存。</div>
+        <div class="status-item"><span class="status-dot runtime_error"></span> <strong>Runtime Error (RE)</strong> — 运行时错误：您的代码在运行过程中出现错误，或返回码不为 0。</div>
+        <div class="status-item"><span class="status-dot compile_error"></span> <strong>Compile Error (CE)</strong> — 编译错误：您的代码未通过编译。</div>
+        <div class="status-item"><span class="status-dot pending"></span> <strong>Pending</strong> — 等待评测/评测中：您的代码正在等待后端进行评测，或者正在评测。请注意，如果长时间（>5min）保持 Pending，很可能后端出问题，请联系管理员排查。</div>
+        <!-- <div class="status-item"><span class="status-dot compiling"></span> <strong>Compiling</strong> — 编译中</div> -->
+        <!-- <div class="status-item"><span class="status-dot running"></span> <strong>Running</strong> — 运行中</div> -->
+        <div class="status-item"><span class="status-dot system_error"></span> <strong>System Error (SE)</strong> — 系统错误：这不是您的问题，而是系统出现了某些不对劲的错误。</div>
+        <div class="status-item"><span class="status-dot cancelled"></span> <strong>Cancelled</strong> — 已被取消：您的提交可能存在违规行为，被管理员无效化。</div>
+        <div class="status-item"><span class="status-dot unaccepted"></span> <strong>Unaccepted</strong> — 未通过（WA/TLE/MLE/RE/CE/SE 的统称）</div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 第二部分：语言注意事项 -->
+    <!-- ============================================================ -->
+    <section class="guide-section">
+      <h2>🛠️ 语言注意事项</h2>
+      <p style="margin-bottom: 1rem;">部分语言对代码结构有特殊要求，请按照以下规范提交：</p>
+
+      <table class="lang-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">语言</th>
+            <th style="width: 85%;">要求</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="lang-name">Java 8 / 11 / 17 / 21</td>
+            <td class="lang-note"><strong>类名必须是 <code>Main</code></strong>，包含 <code>public static void main(String[] args)</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Kotlin JVM</td>
+            <td class="lang-note">必须定义顶层 <code>fun main(args: Array&lt;String&gt;)</code> 或 <code>fun main()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Scala</td>
+            <td class="lang-note">必须定义 <code>object Main { def main(args: Array[String]): Unit = ... }</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Ceylon</td>
+            <td class="lang-note">必须使用 <code>shared void run()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Eiffel</td>
+            <td class="lang-note">必须 <code>class MAIN</code>、<code>create make</code>、<code>feature make</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Erlang</td>
+            <td class="lang-note">必须 <code>-module(main).</code>、<code>-export([start/0]).</code>、<code>start() -> ...</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Prolog</td>
+            <td class="lang-note">必须定义 <code>main</code> 谓词，例如 <code>:- initialization(main).</code> <code>main :- ...</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Go</td>
+            <td class="lang-note">必须 <code>package main</code> 和 <code>func main()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Rust</td>
+            <td class="lang-note">必须 <code>fn main()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Haskell</td>
+            <td class="lang-note">必须 <code>main = ...</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Pascal</td>
+            <td class="lang-note">建议 <code>program Main; begin ... end.</code>（可任意命名）</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Ada</td>
+            <td class="lang-note">建议 <code>procedure Main is ...</code>（可任意命名）</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Fortran</td>
+            <td class="lang-note">建议 <code>program main</code>（可任意命名）</td>
+          </tr>
+          <tr>
+            <td class="lang-name">D</td>
+            <td class="lang-note">必须 <code>void main()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Dart</td>
+            <td class="lang-note">必须 <code>void main()</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">C / C++</td>
+            <td class="lang-note"><code>int main()</code> 或 <code>int main(void)</code></td>
+          </tr>
+          <tr>
+            <td class="lang-name">Python 3 / PyPy3</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>print</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Ruby / PHP / Lua / Perl / Tcl / Bash</td>
+            <td class="lang-note">无需特殊入口，直接执行</td>
+          </tr>
+          <tr>
+            <td class="lang-name">JavaScript / TypeScript</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>console.log</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Brainfuck / Fish</td>
+            <td class="lang-note">无需特殊入口，直接执行代码</td>
+          </tr>
+          <tr>
+            <td class="lang-name">BASIC (Yabasic)</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>PRINT</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Lisp / Common Lisp</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>(format t ...)</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Elixir</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>IO.puts</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Clojure</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>(println ...)</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Julia</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>println</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">OCaml</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>print_endline</code> 等</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note-box">
+        <strong>💡 提示：</strong>
+        如果你不确定入口点怎么写，可以参考 <a href="/problem.html?id=C1000">C1000. Hello, World!</a> 中的示例代码。
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 第三部分：人道主义倍率 -->
+    <!-- ============================================================ -->
+    <section class="guide-section">
+      <h2>💚 代码人道主义：放宽规则</h2>
+      <p style="margin-bottom: 1rem;">
+        我们理解不同语言的启动开销和运行特性不同。为了让每种语言都能公平竞技，CBOJ 为以下语言设置了更宽松的时间限制和内存限制。
+        <br>
+        <span style="color: #6c757d; font-size: 0.9rem;">
+          以下倍率适用于所有题目，实际时限 = 题目时限 × 时间倍率，实际内存 = 题目的存限制 × 内存倍率。
+        </span>
+      </p>
+
+      <table class="multiplier-table">
+        <thead>
+          <tr>
+            <th style="width: 18%;">语言</th>
+            <th style="width: 20%;">时间倍率</th>
+            <th style="width: 20%;">1000ms 时限 → 实际 (ms)</th>
+            <th style="width: 20%;">内存倍率</th>
+            <th style="width: 22%;">256MB 限制 → 实际 (MB)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>C / C++</td>
+            <td>1.0</td>
+            <td>1000</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+          <tr>
+            <td>Pascal / Fortran / Ada / D</td>
+            <td>1.0</td>
+            <td>1000</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+          <tr>
+            <td>Python 3</td>
+            <td>1.5</td>
+            <td>1500</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+          <tr>
+            <td>PyPy 3</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+          <tr class="highlight-jvm">
+            <td>Java 8 / 11 / 17 / 21</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr class="highlight-jvm">
+            <td>Kotlin JVM</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr class="highlight-jvm">
+            <td>Scala</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr class="highlight-jvm">
+            <td>Ceylon</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr class="highlight-heavy">
+            <td>Clojure</td>
+            <td>5.0</td>
+            <td>5000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr>
+            <td>Erlang</td>
+            <td>3.0</td>
+            <td>3000</td>
+            <td>3</td>
+            <td>768</td>
+          </tr>
+          <tr>
+            <td>Elixir</td>
+            <td>2.0</td>
+            <td>2000</td>
+            <td>3</td>
+            <td>768</td>
+          </tr>
+          <tr>
+            <td>Julia</td>
+            <td>1.5</td>
+            <td>1500</td>
+            <td>8</td>
+            <td>2048</td>
+          </tr>
+          <tr>
+            <td>Haskell</td>
+            <td>1.5</td>
+            <td>1500</td>
+            <td>3</td>
+            <td>768</td>
+          </tr>
+          <tr>
+            <td>Swift</td>
+            <td>1.2</td>
+            <td>1200</td>
+            <td>3</td>
+            <td>768</td>
+          </tr>
+          <tr>
+            <td>Rust / Go</td>
+            <td>1.0</td>
+            <td>1000</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+          <tr>
+            <td>其他语言</td>
+            <td>1.0</td>
+            <td>1000</td>
+            <td>1</td>
+            <td>256</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note-box">
+        <strong>📌 说明：</strong>
+        放宽的时限和内存只影响评测判定，<strong>不会</strong>影响你在提交记录中看到的时间/内存统计。
+        例如，Java 在 1000ms 的题目中实际可以运行 2000ms，但记录中仍会显示真实耗时。
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- 第四部分：FAQ / 常见问题 -->
+    <!-- ============================================================ -->
+    <section class="guide-section">
+      <h2>❓ 常见问题</h2>
+
+      <h3>Q: 为什么我的代码本地能跑，OJ 上却报错？</h3>
+      <p>
+        A: 最常见的原因是 <strong>入口点不符合要求</strong>。请对照上方的“语言注意事项”检查你的代码结构。
+        例如 Java 必须用 <code>public class Main</code>，Ceylon 必须用 <code>shared void run()</code>。
+      </p>
+
+      <h3>Q: 为什么 Erlang / Clojure 启动这么慢？</h3>
+      <p>
+        A: Erlang 的 BEAM VM 和 Clojure 的 JVM 启动本身就有较大开销。
+        我们已为这些语言设置了“人道主义”倍率，请放心提交。
+      </p>
+
+      <h3>Q: 我的提交一直在 Pending，正常吗？</h3>
+      <p>
+        A: 由于 CBOJ 的评测在 GitHub Actions 上运行，提交后可能需要排队等待 Runner 分配。
+        如果超过 5 分钟仍为 Pending，可能是评测机出现异常，请联系管理员。
+      </p>
+
+      <h3>Q: 什么是 System Error？</h3>
+      <p>
+        A: 通常表示评测系统内部出现了问题（如 GitHub Actions 触发失败、数据库写入异常等）。
+        如果遇到，建议稍后重新提交，或联系管理员排查。
+      </p>
+
+      <h3>Q: 我可以查看其他人的代码吗？</h3>
+      <p>
+        A: 你可以查看其他人的提交记录，但<strong>只能看到测试点详情，无法查看源代码</strong>。
+        只有你自己和管理员能看到你的完整代码。
+      </p>
+    </section>
+
+    <hr style="margin: 3rem 0; border: none; border-top: 1px solid #e1e4e8;">
+
+    <p style="text-align: center; color: #6c757d; font-size: 0.9rem;">
+      CBOJ 是一个由爱好者维护的在线评测系统，如有问题请反馈。<br>
+      本页最后更新：2026-08-25
+    </p>
+  </div>
+
+  <script type="module">
+    import { getUserInfo } from '/js/api.js';
+
+    // ---------- 导航栏 ----------
+    const nav = document.getElementById('navbar');
+    const user = getUserInfo();
+    nav.innerHTML = `
+      <div class="logo"><span>CB</span>OJ</div>
+      <div>
+        <a href="/index.html">首页</a>
+        <a href="/problems.html">题目</a>
+        <a href="/submissions.html">提交记录</a>
+        <a href="/rank.html">排行榜</a>
+        <a href="/contests.html">比赛</a>
+        ${user ? `<a href="/admin/problems.html" style="color: #f0b400;">管理</a>` : ''}
+      </div>
+      <div class="right">
+        ${user ? `<span class="user">👤 ${user.username}</span> <button onclick="localStorage.removeItem('token'); window.location.href='/index.html'">退出</button>` 
+                : `<a href="/login.html">登录</a> <a href="/register.html">注册</a>`}
+      </div>
+    `;
+  </script>
+</body>
+</html>
