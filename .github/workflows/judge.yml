@@ -116,7 +116,7 @@ jobs:
               echo "CEYLON_HOME=/opt/ceylon" >> $GITHUB_ENV
               echo "/opt/ceylon/bin" >> $GITHUB_PATH
               ;;
-            "Logo") sudo apt-get install -y ucblogo ;;
+            "Logo") sudo apt-get install -y ucblogo xvfb ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -385,7 +385,7 @@ jobs:
             "Brainfuck") EXT="bf"; COMPILE=""; RUN_CMD="beef main.bf" ;;
             "TeX") EXT="tex"; COMPILE=""; RUN_CMD="tex main.tex" ;;
             # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
-            "Logo") EXT="lg"; COMPILE=""; RUN_CMD="logo -q -batch main.lg" ;;
+            "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
