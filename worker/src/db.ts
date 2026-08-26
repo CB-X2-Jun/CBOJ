@@ -8,7 +8,7 @@ export async function getUserByUsername(username: string, env: Env) {
 }
 
 export async function getUserByUid(uid: number, env: Env) {
-  return await env.DB.prepare('SELECT uid, username, nickname, admin FROM users WHERE uid = ?').bind(uid).first();
+  return await env.DB.prepare('SELECT uid, username, nickname FROM users WHERE uid = ?').bind(uid).first();
 }
 
 export async function createUser(username: string, passwordHash: string, nickname: string, env: Env) {
@@ -21,21 +21,53 @@ export async function createUser(username: string, passwordHash: string, nicknam
 
 // ========== 题目 ==========
 export async function getProblems(env: Env) {
-  return await env.DB.prepare('SELECT id, title, time_limit, memory_limit FROM problems ORDER BY id').all();
+  return await env.DB.prepare('SELECT id, title, difficulty, total_score, time_limit, memory_limit FROM problems ORDER BY id COLLATE NOCASE').all();
+}
+
+export async function searchProblems(keyword: string, env: Env) {
+  const pattern = `%${keyword}%`;
+  return await env.DB.prepare(
+    `SELECT id, title, difficulty, total_score, time_limit, memory_limit 
+     FROM problems 
+     WHERE id LIKE ? OR title LIKE ? OR difficulty LIKE ?
+     ORDER BY id COLLATE NOCASE`
+  ).bind(pattern, pattern, pattern).all();
 }
 
 export async function getProblem(id: string, env: Env) {
   return await env.DB.prepare('SELECT * FROM problems WHERE id = ?').bind(id).first();
 }
 
-export async function createProblem(id: string, title: string, description: string, timeLimit: number, memoryLimit: number, testCases: string, env: Env) {
-  await env.DB.prepare('INSERT INTO problems (id, title, description, time_limit, memory_limit, test_cases) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(id, title, description, timeLimit, memoryLimit, testCases).run();
+export async function createProblem(
+  id: string, 
+  title: string, 
+  description: string, 
+  timeLimit: number, 
+  memoryLimit: number, 
+  testCases: string,
+  difficulty: string,
+  totalScore: number,
+  env: Env
+) {
+  await env.DB.prepare(
+    'INSERT INTO problems (id, title, description, time_limit, memory_limit, test_cases, difficulty, total_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, title, description, timeLimit, memoryLimit, testCases, difficulty, totalScore).run();
 }
 
-export async function updateProblem(id: string, title: string, description: string, timeLimit: number, memoryLimit: number, testCases: string, env: Env) {
-  await env.DB.prepare('UPDATE problems SET title = ?, description = ?, time_limit = ?, memory_limit = ?, test_cases = ? WHERE id = ?')
-    .bind(title, description, timeLimit, memoryLimit, testCases, id).run();
+export async function updateProblem(
+  id: string, 
+  title: string, 
+  description: string, 
+  timeLimit: number, 
+  memoryLimit: number, 
+  testCases: string,
+  difficulty: string,
+  totalScore: number,
+  env: Env
+) {
+  await env.DB.prepare(
+    'UPDATE problems SET title = ?, description = ?, time_limit = ?, memory_limit = ?, test_cases = ?, difficulty = ?, total_score = ? WHERE id = ?'
+  ).bind(title, description, timeLimit, memoryLimit, testCases, difficulty, totalScore, id).run();
 }
 
 export async function deleteProblem(id: string, env: Env) {
@@ -45,11 +77,10 @@ export async function deleteProblem(id: string, env: Env) {
 // ========== 提交 ==========
 export async function getMaxRid(env: Env): Promise<number> {
   const result = await env.DB.prepare('SELECT MAX(rid) as max FROM submissions').first() as { max: number | null };
-  return result?.max ?? 0;  // 确保永远返回数字，不为 undefined
+  return result?.max ?? 0;
 }
 
 export async function createSubmission(rid: number, uid: number, problemId: string, language: string, code: string, env: Env) {
-  // 参数校验，防止 undefined 或 null
   if (rid === undefined || rid === null || isNaN(rid)) {
     throw new Error('Invalid rid: ' + rid);
   }
@@ -60,28 +91,29 @@ export async function createSubmission(rid: number, uid: number, problemId: stri
   if (!language) throw new Error('Missing language');
   if (!code) throw new Error('Missing code');
 
+  // 获取题目总分
+  const problem = await getProblem(problemId, env);
+  const maxScore = problem?.total_score || 100;
+
   await env.DB.prepare(
-    'INSERT INTO submissions (rid, uid, problem_id, language, code, status) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(rid, uid, problemId, language, code, 'pending').run();
+    'INSERT INTO submissions (rid, uid, problem_id, language, code, status, max_score) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(rid, uid, problemId, language, code, 'pending', maxScore).run();
   return rid;
 }
 
-export async function getSubmissions(env: Env, limit: number, offset: number) {
-  return await env.DB.prepare(
-    `SELECT s.rid, s.uid, u.username, s.problem_id, s.language, s.status, s.time_used, s.memory_used, s.created_at
-     FROM submissions s LEFT JOIN users u ON s.uid = u.uid
-     ORDER BY s.rid DESC LIMIT ? OFFSET ?`
-  ).bind(limit, offset).all();
+export async function saveSubmissionDetails(rid: number, details: any[], env: Env) {
+  for (let i = 0; i < details.length; i++) {
+    const d = details[i];
+    await env.DB.prepare(
+      'INSERT INTO submission_details (rid, test_index, status, time_used, memory_used, score) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(rid, i + 1, d.status, d.time_used || null, d.memory_used || null, d.score || 0).run();
+  }
 }
 
-export async function getSubmission(rid: number, env: Env) {
+export async function getSubmissionDetails(rid: number, env: Env) {
   return await env.DB.prepare(
-    `SELECT s.*, u.username, u.nickname, p.title as problem_title
-     FROM submissions s
-     LEFT JOIN users u ON s.uid = u.uid
-     LEFT JOIN problems p ON s.problem_id = p.id
-     WHERE s.rid = ?`
-  ).bind(rid).first();
+    'SELECT test_index, status, time_used, memory_used, score FROM submission_details WHERE rid = ? ORDER BY test_index'
+  ).bind(rid).all();
 }
 
 export async function updateSubmissionStatus(rid: number, status: string, result: string | null, timeUsed: number | null, memoryUsed: number | null, env: Env) {
@@ -95,16 +127,84 @@ export async function cancelSubmission(rid: number, env: Env) {
   await env.DB.prepare('UPDATE submissions SET status = ? WHERE rid = ?').bind('cancelled', rid).run();
 }
 
+export async function getSubmissions(env: Env, limit: number, offset: number) {
+  return await env.DB.prepare(
+    `SELECT s.rid, s.uid, u.username, s.problem_id, s.language, s.status, s.time_used, s.memory_used, s.score, s.max_score, s.created_at
+     FROM submissions s LEFT JOIN users u ON s.uid = u.uid
+     ORDER BY s.rid DESC LIMIT ? OFFSET ?`
+  ).bind(limit, offset).all();
+}
+
+export async function getSubmissionsWithFilter(
+  env: Env, 
+  limit: number, 
+  offset: number, 
+  filters: {
+    user?: string;
+    language?: string;
+    problem?: string;
+    status?: string;
+  }
+) {
+  let sql = `
+    SELECT s.rid, s.uid, u.username, s.problem_id, s.language, s.status, s.time_used, s.memory_used, s.score, s.max_score, s.created_at
+    FROM submissions s LEFT JOIN users u ON s.uid = u.uid
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+
+  if (filters.user) {
+    sql += ` AND (u.username LIKE ? OR u.nickname LIKE ?)`;
+    const pattern = `${filters.user}%`;
+    params.push(pattern, pattern);
+  }
+  if (filters.language) {
+    sql += ` AND s.language LIKE ?`;
+    params.push(`${filters.language}%`);
+  }
+  if (filters.problem) {
+    sql += ` AND s.problem_id LIKE ?`;
+    params.push(`${filters.problem}%`);
+  }
+  if (filters.status) {
+    if (filters.status === 'unaccepted') {
+      sql += ` AND s.status NOT IN ('accepted', 'pending')`;
+    } else {
+      sql += ` AND s.status = ?`;
+      params.push(filters.status);
+    }
+  }
+
+  sql += ` ORDER BY s.rid DESC LIMIT ? OFFSET ?`;
+  params.push(limit, offset);
+
+  return await env.DB.prepare(sql).bind(...params).all();
+}
+
+export async function getSubmission(rid: number, env: Env) {
+  return await env.DB.prepare(
+    `SELECT s.*, u.username, u.nickname, p.title as problem_title, p.total_score as max_score
+     FROM submissions s
+     LEFT JOIN users u ON s.uid = u.uid
+     LEFT JOIN problems p ON s.problem_id = p.id
+     WHERE s.rid = ?`
+  ).bind(rid).first();
+}
+
+export async function updateSubmissionScore(rid: number, score: number, env: Env) {
+  await env.DB.prepare('UPDATE submissions SET score = ? WHERE rid = ?').bind(score, rid).run();
+}
+
 export async function getSubmissionsByUser(uid: number, env: Env) {
   return await env.DB.prepare(
-    `SELECT rid, problem_id, language, status, time_used, memory_used, created_at
+    `SELECT rid, problem_id, language, status, time_used, memory_used, score, created_at
      FROM submissions WHERE uid = ? ORDER BY rid DESC`
   ).bind(uid).all();
 }
 
 export async function getSubmissionsByProblem(problemId: string, env: Env) {
   return await env.DB.prepare(
-    `SELECT rid, uid, language, status, time_used, memory_used, created_at
+    `SELECT rid, uid, language, status, time_used, memory_used, score, created_at
      FROM submissions WHERE problem_id = ? ORDER BY rid DESC`
   ).bind(problemId).all();
 }

@@ -15,10 +15,11 @@ export async function triggerGitHubActions(env: any, payload: any) {
           rid: payload.rid,
           problemId: payload.problemId,
           language: payload.language,
-          code: payload.code,
+          code: payload.code,  // 代码一般小于 5KB，可保留
           timeLimit: payload.timeLimit,
           memoryLimit: payload.memoryLimit,
-          testCases: payload.testCases,
+          totalScore: payload.totalScore || 100,
+          // ❌ 不再传递 testCases
           callbackUrl: `${env.SITE_URL}/api/callback`,
         },
       }),

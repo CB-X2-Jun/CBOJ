@@ -1,5 +1,5 @@
 import { handleRegister, handleLogin } from './routes/auth';
-import { handleProblems, handleProblem, handleCreateProblem, handleUpdateProblem, handleDeleteProblem } from './routes/problems';
+import { handleProblems, handleProblem, handleCreateProblem, handleUpdateProblem, handleDeleteProblem, handleSearchProblems } from './routes/problems';
 import { handleSubmit, handleSubmission, handleSubmissions, handleCallback, handleCancelSubmission } from './routes/submissions';
 import { handleRank } from './routes/rank';
 import { handleContests, handleContest, handleCreateContest, handleUpdateContest, handleDeleteContest, handleJoinContest } from './routes/contests';
@@ -38,6 +38,20 @@ export default {
       });
     };
 
+    // ---------- 辅助：获取用户身份（优先从 token，无则未登录） ----------
+    async function getUserFromRequest(request: Request) {
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { uid: 0, isAdmin: false };
+      }
+      const token = authHeader.slice(7);
+      const payload = await verifyToken(token, env.JWT_SECRET);
+      if (!payload) {
+        return { uid: 0, isAdmin: false };
+      }
+      return { uid: payload.uid, isAdmin: payload.admin || false };
+    }
+
     try {
       // ========== 公开路由（无需登录） ==========
       if (path === '/api/auth/register' && method === 'POST') {
@@ -47,6 +61,10 @@ export default {
         return await handleLogin(request, env);
       }
       if (path === '/api/problems' && method === 'GET') {
+        const q = url.searchParams.get('q');
+        if (q) {
+          return await handleSearchProblems(request, env);
+        }
         return await handleProblems(env);
       }
       if (path === '/api/rank' && method === 'GET') {
@@ -59,24 +77,42 @@ export default {
         return await handleCallback(request, env);
       }
 
-      // ---------- 未登录也可查看的 GET 路由 ----------
-      // 题目详情（未登录可看）
+      // ---------- 题目详情（未登录可看） ----------
       if (path.startsWith('/api/problem/') && method === 'GET') {
         const id = path.split('/')[3];
         if (!id) return json({ error: 'Missing problem id' }, 400);
         return await handleProblem(id, env);
       }
-
-      // 提交记录列表（未登录可看）
-      if (path === '/api/submissions' && method === 'GET') {
-        return await handleSubmissions(url, 0, env); // uid=0 表示未登录
+      
+      // ========== 获取题目测试用例（供 GitHub Actions 使用） ==========
+      if (path.startsWith('/api/problem/') && path.endsWith('/testcases') && method === 'GET') {
+        const parts = path.split('/');
+        const problemId = parts[3]; // /api/problem/C1000/testcases
+        if (!problemId) return json({ error: 'Missing problem id' }, 400);
+        const problem = await getProblem(problemId, env);
+        if (!problem) return json({ error: 'Problem not found' }, 404);
+        try {
+          const testCases = JSON.parse(problem.test_cases);
+          return new Response(JSON.stringify(testCases), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
+        } catch (e) {
+          return json({ error: 'Invalid test_cases format' }, 500);
+        }
       }
 
-      // 单条提交详情（未登录可看，但代码会被隐藏）
+      // ---------- 提交记录列表（未登录可看，但通过 token 识别身份） ----------
+      if (path === '/api/submissions' && method === 'GET') {
+        const { uid } = await getUserFromRequest(request);
+        return await handleSubmissions(url, uid, env);
+      }
+
+      // ---------- 单条提交详情（未登录可看，但通过 token 识别身份） ----------
       if (path.startsWith('/api/submission/') && method === 'GET') {
         const id = parseInt(path.split('/')[3]);
         if (isNaN(id)) return json({ error: 'Invalid submission id' }, 400);
-        return await handleSubmission(id, 0, false, env); // 未登录，isAdmin=false
+        const { uid, isAdmin } = await getUserFromRequest(request);
+        return await handleSubmission(id, uid, isAdmin, env);
       }
 
       // ========== 需要登录 ==========
@@ -93,13 +129,11 @@ export default {
       const isAdminUser = payload.admin || false;
 
       // ---------- 题目管理（仅管理员） ----------
-      // 创建题目：POST /api/problem
       if (path === '/api/problem' && method === 'POST') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         return await handleCreateProblem(request, env);
       }
 
-      // 更新题目：PUT /api/problem/xxx
       if (path.startsWith('/api/problem/') && method === 'PUT') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         const id = path.split('/')[3];
@@ -107,7 +141,6 @@ export default {
         return await handleUpdateProblem(request, id, env);
       }
 
-      // 删除题目：DELETE /api/problem/xxx
       if (path.startsWith('/api/problem/') && method === 'DELETE') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         const id = path.split('/')[3];
@@ -120,7 +153,6 @@ export default {
         return await handleSubmit(request, uid, env);
       }
 
-      // 取消提交（仅管理员）
       if (path.startsWith('/api/submission/') && method === 'POST' && path.endsWith('/cancel')) {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         const parts = path.split('/');
@@ -129,19 +161,16 @@ export default {
         return await handleCancelSubmission(id, env);
       }
 
-      // 其他 POST 到 /api/submission/xxx 暂不支持
       if (path.startsWith('/api/submission/') && method === 'POST') {
         return json({ error: 'Not Found' }, 404);
       }
 
       // ---------- 比赛相关 ----------
-      // 创建比赛（仅管理员）
       if (path === '/api/contest' && method === 'POST') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         return await handleCreateContest(request, env);
       }
 
-      // 更新比赛（仅管理员）
       if (path.startsWith('/api/contest/') && method === 'PUT') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         const id = parseInt(path.split('/')[3]);
@@ -149,7 +178,6 @@ export default {
         return await handleUpdateContest(request, id, env);
       }
 
-      // 删除比赛（仅管理员）
       if (path.startsWith('/api/contest/') && method === 'DELETE') {
         if (!isAdminUser) return json({ error: 'Forbidden' }, 403);
         const id = parseInt(path.split('/')[3]);
@@ -157,7 +185,6 @@ export default {
         return await handleDeleteContest(id, env);
       }
 
-      // 参加比赛（需要登录）
       if (path.startsWith('/api/contest/') && path.endsWith('/join') && method === 'POST') {
         const parts = path.split('/');
         const id = parseInt(parts[3]);
@@ -165,7 +192,6 @@ export default {
         return await handleJoinContest(id, uid, env);
       }
 
-      // 404
       return json({ error: 'Not Found' }, 404);
     } catch (error) {
       console.error('Unhandled error:', error);
