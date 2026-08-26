@@ -118,6 +118,14 @@ jobs:
               ;;
             # "Logo") sudo apt-get install -y ucblogo xvfb ;;
             "Elixir") sudo apt-get install -y elixir ;;
+            "B")
+              # 安装 bcause（B 语言编译器）
+              git clone https://github.com/spydr06/bcause.git /tmp/bcause
+              cd /tmp/bcause
+              make
+              sudo make install
+              bcause --version || true
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -391,6 +399,7 @@ jobs:
             # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
             # "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
             "Elixir") EXT="exs"; COMPILE=""; RUN_CMD="elixir main.exs" ;;
+            "B") EXT="b"; COMPILE="bcause -o program main.b"; RUN_CMD="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
