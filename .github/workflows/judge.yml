@@ -399,7 +399,7 @@ jobs:
             # "Powershell") EXT="ps1"; COMPILE=""; RUN_CMD="pwsh -NoProfile -ExecutionPolicy Bypass -File main.ps1" ;;
             # "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
             "Elixir") EXT="exs"; COMPILE=""; RUN_CMD="elixir main.exs" ;;
-            "B") EXT="b"; COMPILE="bcause -o program main.b -L/lib64"; RUN_CMD="./program" ;;
+            "B") EXT="b"; COMPILE="bcause -o program main.b -L/lib64/libb.a"; RUN_CMD="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
