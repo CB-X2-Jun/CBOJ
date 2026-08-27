@@ -37,6 +37,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/tcl/tcl.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/commonlisp/commonlisp.min.js"></script>
   <script sre="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/d/d.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/coffeescript/coffeescript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/livescript/livescript.min.js"></script>
   <!-- 可能缺失的模式，可以回退到 plain -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -73,6 +75,7 @@
             <option value="C++26">C++26 (g++ 13.2.0, 实验性)</option>
             <option value="Ceylon">Ceylon 1.3.3</option>
             <option value="Clojure">Clojure 1.12.5</option>
+            <option value="CoffeeScript">CoffeeScript 2.7.0</option>
             <option value="Common Lisp">Common Lisp (SBCL 2.2.9)</option>
             <option value="D">D (GDC 13.2.0)</option>
             <option value="Dart">Dart 3.5.4</option>
@@ -92,6 +95,7 @@
             <option value="Julia">Julia 1.10.5</option>
             <option value="Kotlin JVM">Kotlin JVM 1.3.31</option>
             <option value="Lisp">Lisp (SBCL 2.2.9)</option>
+            <option value="LiveScript">LiveScript 1.6.0</option>
             <!-- <option value="Logo">Logo (UCBLogo 6.2.5)</option> -->
             <option value="Lua">Lua 5.4.6</option>
             <option value="Objective-C">Objective-C (Clang 18.1.3)</option>
@@ -202,6 +206,7 @@
     // 模式映射（CodeMirror 5 的 mode 名称）
     const modeMap = {
       'Ada': 'text/x-ada',
+      'B': 'text/x-b',
       'Bash': 'text/x-sh',
       'BASIC': 'text/x-vb',
       'Brainfuck': 'text/x-brainfuck',
@@ -217,6 +222,7 @@
       'C++26': 'text/x-c++src',
       'Ceylon': 'text/x-ceylon',
       'Clojure': 'text/x-clojure',
+      'CoffeeScript': 'text/x-coffeescript',
       'Common Lisp': 'text/x-common-lisp',
       'D': 'text/x-d',
       'Dart': 'text/x-dart',
@@ -235,6 +241,7 @@
       'Julia': 'text/x-julia',
       'Kotlin JVM': 'text/x-kotlin',
       'Lisp': 'text/x-common-lisp',
+      'LiveScript': 'text/x-livescript',
       'Logo': 'text/x-common-lisp',
       'Lua': 'text/x-lua',
       'Objective-C': 'text/x-objectivec',
