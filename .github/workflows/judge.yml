@@ -163,6 +163,9 @@ jobs:
               # 验证安装
               cfunge -V || true
               ;;
+            "Nim") sudo apt-get install -y nim ;;
+            "Forth") sudo apt-get install -y gforth ;;
+            "Groovy") sudo apt-get install -y groovy ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -208,7 +211,7 @@ jobs:
           # ---------- 内存限制倍率 ----------
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
-            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure"|"Ceylon") MEM_MULTIPLIER=5 ;;
+            "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure"|"Ceylon"|"Groovy") MEM_MULTIPLIER=5 ;;
             "Haskell"|"Swift"|"Erlang") MEM_MULTIPLIER=3 ;;
             "Elixir") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
@@ -223,7 +226,7 @@ jobs:
             "C"|"C++"*) LANG_TIME_MULTIPLIER=1.0 ;;
             "Python"*) LANG_TIME_MULTIPLIER=1.5 ;;
             "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
-            "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Java"*|"Kotlin JVM"|"Scala"|"Ceylon"|"Groovy") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
             "Elixir") LANG_TIME_MULTIPLIER=2.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=3.0 ;;
@@ -442,6 +445,9 @@ jobs:
             "Zig") EXT="zig"; COMPILE="zig build-exe main.zig"; RUN_CMD="./main" ;;
             "Befunge-93") EXT="b93"; COMPILE=""; RUN_CMD="cfunge -s 93 main.b93" ;;
             "Befunge-98") EXT="b98"; COMPILE=""; RUN_CMD="cfunge -s 98 main.b98" ;;
+            "Nim") EXT="nim"; COMPILE="nim c -o:main main.nim"; RUN_CMD="./main" ;;
+            "Forth") EXT="fs"; COMPILE=""; RUN_CMD="gforth main.fs" ;;
+            "Groovy") EXT="groovy"; COMPILE=""; RUN_CMD="groovy main.groovy" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
