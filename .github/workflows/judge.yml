@@ -147,6 +147,22 @@ jobs:
               # cd zig-x86_64-linux-0.16.0
               # zig version
               ;;
+            "Befunge")
+              sudo apt-get update
+              sudo apt-get install -y git cmake build-essential
+              # 克隆仓库（使用 VorpalBlade 维护的版本）
+              git clone --depth 1 https://github.com/VorpalBlade/cfunge.git /tmp/cfunge
+              # 按照官方 README 要求：out-of-tree 构建
+              mkdir -p /tmp/build
+              cd /tmp/build
+              cmake /tmp/cfunge
+              # 编译
+              make
+              # 安装到系统路径（需要 sudo）
+              sudo make install
+              # 验证安装
+              cfunge -V || true
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -424,6 +440,8 @@ jobs:
             "CoffeeScript") EXT="coffee"; COMPILE="npx coffee -c main.coffee"; RUN_CMD="node main.js" ;;
             "LiveScript") EXT="ls"; COMPILE="lsc -c main.ls"; RUN_CMD="node main.js" ;;
             "Zig") EXT="zig"; COMPILE="zig build-exe main.zig"; RUN_CMD="./main" ;;
+            "Befunge-93") EXT="b93"; COMPILE=""; RUN_CMD="cfunge -s 93 main.b93" ;;
+            "Befunge-98") EXT="b98"; COMPILE=""; RUN_CMD="cfunge -s 98 main.b98" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
