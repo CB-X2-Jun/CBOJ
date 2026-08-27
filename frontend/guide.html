@@ -275,6 +275,34 @@
             <td class="lang-note"><code>int main()</code> 或 <code>int main(void)</code></td>
           </tr>
           <tr>
+            <td class="lang-name">C#</td>
+            <td class="lang-note">
+              必须包含 <code>class Program { static void Main(string[] args) { ... } }</code> 或 <code>static void Main()</code>。
+              <!-- 编译使用 <code>mcs</code>，运行时使用 <code>mono</code>。 -->
+            </td>
+          </tr>
+          <tr>
+            <td class="lang-name">F#</td>
+            <td class="lang-note">
+              需包含 <code>[&lt;EntryPoint&gt;] let main argv = ...</code>，或也可以使用 <code>printfn</code> 等顶层代码（但建议显式入口点）。
+              <!-- 编译使用 <code>fsharpc</code>，运行时使用 <code>mono</code>。 -->
+            </td>
+          </tr>
+          <tr>
+            <td class="lang-name">Objective-C / Objective-C++</td>
+            <td class="lang-note">
+              必须包含入口点 <code>int main(int argc, char *argv[])</code> 或 <code>int main(void)</code>，与 C/C++ 相同。
+              <!-- 可使用 Foundation 框架（但 OJ 环境可能未预装，建议使用标准 C 库）。 -->
+            </td>
+          </tr>
+          <tr>
+            <td class="lang-name">Swift</td>
+            <td class="lang-note">
+              无需显式 <code>main</code> 函数，直接写顶层代码（如 <code>print("string xxxx")</code>）即可。<br>
+              也可以使用 <code>@main</code> 属性标记结构体，但 OJ 中推荐直接写顶层代码。
+            </td>
+          </tr>
+          <tr>
             <td class="lang-name">Python 3 / PyPy3</td>
             <td class="lang-note">无需特殊入口，直接执行 <code>print</code> 等</td>
           </tr>
