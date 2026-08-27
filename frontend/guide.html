@@ -265,7 +265,7 @@
             <td class="lang-name">Zig</td>
             <td class="lang-note">
               入口函数：<code>pub fn main(init: std.process.Init) !void</code> （Zig 0.16.0 及更新版本）。<br>
-              <strong>⚠️ 输出必须使用 <code>std.Io.File.stdout()</code></strong>，例如：
+              <strong>输出必须使用 <code>std.Io.File.stdout()</code></strong>，例如：
               <code>try std.Io.File.stdout().writeStreamingAll(init.io, "Hello, World!\n");</code><br>
               <strong>绝对不要使用 <code>std.debug.print</code></strong>，因为它输出到 <strong>stderr</strong>，OJ 只比对 stdout，会导致 <strong>Wrong Answer</strong>。
             </td>
@@ -277,21 +277,21 @@
           <tr>
             <td class="lang-name">C#</td>
             <td class="lang-note">
-              必须包含 <code>class Program { static void Main(string[] args) { ... } }</code> 或 <code>static void Main()</code>。
+              必须包含 <code>class Program { static void Main(string[] args) { ... } }</code> 或 <code>static void Main()</code>
               <!-- 编译使用 <code>mcs</code>，运行时使用 <code>mono</code>。 -->
             </td>
           </tr>
           <tr>
             <td class="lang-name">F#</td>
             <td class="lang-note">
-              需包含 <code>[&lt;EntryPoint&gt;] let main argv = ...</code>，或也可以使用 <code>printfn</code> 等顶层代码（但建议显式入口点）。
+              需包含 <code>[&lt;EntryPoint&gt;] let main argv = ...</code>，或也可以使用 <code>printfn</code> 等顶层代码（但建议显式入口点）
               <!-- 编译使用 <code>fsharpc</code>，运行时使用 <code>mono</code>。 -->
             </td>
           </tr>
           <tr>
             <td class="lang-name">Objective-C / Objective-C++</td>
             <td class="lang-note">
-              必须包含入口点 <code>int main(int argc, char *argv[])</code> 或 <code>int main(void)</code>，与 C/C++ 相同。
+              必须包含入口点 <code>int main(int argc, char *argv[])</code> 或 <code>int main(void)</code>，与 C/C++ 相同
               <!-- 可使用 Foundation 框架（但 OJ 环境可能未预装，建议使用标准 C 库）。 -->
             </td>
           </tr>
@@ -299,7 +299,13 @@
             <td class="lang-name">Swift</td>
             <td class="lang-note">
               无需显式 <code>main</code> 函数，直接写顶层代码（如 <code>print("string xxxx")</code>）即可。<br>
-              也可以使用 <code>@main</code> 属性标记结构体，但 OJ 中推荐直接写顶层代码。
+              也可以使用 <code>@main</code> 属性标记结构体，但 OJ 中推荐直接写顶层代码
+            </td>
+          </tr>
+          <tr>
+            <td class="lang-name">Forth</td>
+            <td class="lang-note">
+              无需特殊入口，直接执行，但必须加上 <code>bye</code> 使程序即刻退出，否则会输出版权与帮助信息，导致 WA
             </td>
           </tr>
           <tr>
@@ -335,12 +341,16 @@
             <td class="lang-note">无需特殊入口，直接执行 <code>(println ...)</code> 等</td>
           </tr>
           <tr>
-            <td class="lang-name">Julia</td>
+            <td class="lang-name">Julia / Groovy</td>
             <td class="lang-note">无需特殊入口，直接执行 <code>println</code> 等</td>
           </tr>
           <tr>
             <td class="lang-name">OCaml</td>
             <td class="lang-note">无需特殊入口，直接执行 <code>print_endline</code> 等</td>
+          </tr>
+          <tr>
+            <td class="lang-name">Nim</td>
+            <td class="lang-note">无需特殊入口，直接执行 <code>echo</code> 等</td>
           </tr>
         </tbody>
       </table>
@@ -433,6 +443,13 @@
           </tr>
           <tr class="highlight-heavy">
             <td>Clojure</td>
+            <td>5.0</td>
+            <td>5000</td>
+            <td>5</td>
+            <td>1280</td>
+          </tr>
+          <tr class="highlight-heavy">
+            <td>Groovy</td>
             <td>5.0</td>
             <td>5000</td>
             <td>5</td>
