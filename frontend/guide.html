@@ -262,6 +262,15 @@
             <td class="lang-note">必须 <code>main()</code>，且 B 标准库不太对劲，只能使用类似 <code>extrn printf;</code> 的方式使用 C 标准库</td>
           </tr>
           <tr>
+            <td class="lang-name">Zig</td>
+            <td class="lang-note">
+              入口函数：<code>pub fn main(init: std.process.Init) !void</code> （Zig 0.16.0 及更新版本）。<br>
+              <strong>⚠️ 输出必须使用 <code>std.Io.File.stdout()</code></strong>，例如：
+              <code>try std.Io.File.stdout().writeStreamingAll(init.io, "Hello, World!\n");</code><br>
+              <strong>绝对不要使用 <code>std.debug.print</code></strong>，因为它输出到 <strong>stderr</strong>，OJ 只比对 stdout，会导致 <strong>Wrong Answer</strong>。
+            </td>
+          </tr>
+          <tr>
             <td class="lang-name">C / C++</td>
             <td class="lang-note"><code>int main()</code> 或 <code>int main(void)</code></td>
           </tr>
@@ -274,11 +283,11 @@
             <td class="lang-note">无需特殊入口，直接执行</td>
           </tr>
           <tr>
-            <td class="lang-name">JavaScript / TypeScript</td>
+            <td class="lang-name">JavaScript / TypeScript / LiveScript</td>
             <td class="lang-note">无需特殊入口，直接执行 <code>console.log</code> 等</td>
           </tr>
           <tr>
-            <td class="lang-name">Brainfuck / Fish</td>
+            <td class="lang-name">Brainfuck / Fish / Befunge</td>
             <td class="lang-note">无需特殊入口，直接执行代码</td>
           </tr>
           <tr>
