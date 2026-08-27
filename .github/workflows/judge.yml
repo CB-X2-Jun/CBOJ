@@ -31,9 +31,25 @@ jobs:
             "Rust") sudo apt-get install -y rustc cargo ;;
             "Ruby") sudo apt-get install -y ruby-full ;;
             "PHP") sudo apt-get install -y php-cli ;;
-            "Javascript"|"Typescript")
+            "Javascript")
               sudo apt-get install -y nodejs npm
-              sudo npm install -g typescript
+              ;;
+            "Typescript")
+              sudo apt-get install -y nodejs npm
+              # 1. 初始化项目并安装 Node.js 类型定义
+              npm init -y
+              npm install --save-dev typescript @types/node
+              # 2. 创建最小 tsconfig.json 以支持 Node.js 模块解析
+              echo '{
+                "compilerOptions": {
+                  "target": "ES2020",
+                  "module": "CommonJS",
+                  "esModuleInterop": true,
+                  "moduleResolution": "node",
+                  "types": ["node"],
+                  "resolveJsonModule": true
+                }
+              }' > tsconfig.json
               ;;
             "Lua") sudo apt-get install -y lua5.4 ;;
             "Perl") sudo apt-get install -y perl ;;
@@ -370,7 +386,7 @@ jobs:
             "Ruby") EXT="rb"; COMPILE=""; RUN_CMD="ruby main.rb" ;;
             "PHP") EXT="php"; COMPILE=""; RUN_CMD="php main.php" ;;
             "Javascript") EXT="js"; COMPILE=""; RUN_CMD="node main.js" ;;
-            "Typescript") EXT="ts"; COMPILE="tsc main.ts"; RUN_CMD="node main.js" ;;
+            "Typescript") EXT="ts"; COMPILE="npx tsc --project ."; RUN_CMD="node main.js" ;;
             "C#") EXT="cs"; COMPILE="mcs main.cs"; RUN_CMD="mono main.exe" ;;
             "F#") EXT="fs"; COMPILE="fsharpc main.fs"; RUN_CMD="mono main.exe" ;;
             "D") EXT="d"; COMPILE="gdc -O2 main.d -o program"; RUN_CMD="./program" ;;
