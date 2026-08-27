@@ -166,6 +166,8 @@ jobs:
             "Nim") sudo apt-get install -y nim ;;
             "Forth") sudo apt-get install -y gforth ;;
             "Groovy") sudo apt-get install -y groovy ;;
+            "Icon") sudo apt-get install -y icont iconx ;;
+            "Scheme") sudo apt-get install -y mit-scheme ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -448,6 +450,8 @@ jobs:
             "Nim") EXT="nim"; COMPILE="nim c -o:main main.nim"; RUN_CMD="./main" ;;
             "Forth") EXT="fs"; COMPILE=""; RUN_CMD="gforth main.fs" ;;
             "Groovy") EXT="groovy"; COMPILE=""; RUN_CMD="groovy main.groovy" ;;
+            "Icon") EXT="icn"; COMPILE="icont main.icn"; RUN_CMD="iconx main" ;;
+            "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="mit-scheme --quiet < main.scm" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
