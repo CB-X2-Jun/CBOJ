@@ -147,7 +147,7 @@ jobs:
               # cd zig-x86_64-linux-0.16.0
               # zig version
               ;;
-            "Befunge")
+            "Befunge-93"|"Befunge-98")
               sudo apt-get update
               sudo apt-get install -y git cmake build-essential
               # 克隆仓库（使用 VorpalBlade 维护的版本）
