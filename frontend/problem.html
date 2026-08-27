@@ -41,6 +41,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/livescript/livescript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/forth/forth.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/groovy/groovy.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/scheme/scheme.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/brainfuck/brainfuck.min.js"></script>
   <!-- 可能缺失的模式，可以回退到 plain -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -93,6 +95,7 @@
             <option value="Go">Go 1.22</option>
             <option value="Groovy">Groovy 2.4.21</option>
             <option value="Haskell">Haskell (GHC 9.4.7)</option>
+            <option value="Icon">Icon 9.4.3</option>
             <option value="Java8">Java 8 (OpenJDK 1.8.0_492)</option>
             <option value="Java11">Java 11 (OpenJDK 11.0.31)</option>
             <option value="Java17">Java 17 (OpenJDK 17.0.19)</option>
@@ -117,6 +120,7 @@
             <option value="Ruby">Ruby 3.2.6</option>
             <option value="Rust">Rust 1.75.0</option>
             <option value="Scala">Scala 2.11.12</option>
+            <option value="Scheme">Scheme (MIT-Scheme 12.1)</option>
             <option value="Swift">Swift 2.33.0</option>
             <option value="Tcl">Tcl 8.6.14</option>
             <option value="Typescript">TypeScript 7.0.2</option>
@@ -217,6 +221,8 @@
       'B': 'text/x-b',
       'Bash': 'text/x-sh',
       'BASIC': 'text/x-vb',
+      'Befunge-93': 'text/x-brainfuck',
+      'Befunge-98': 'text/x-brainfuck',
       'Brainfuck': 'text/x-brainfuck',
       'C': 'text/x-csrc',
       'C#': 'text/x-csharp',
@@ -237,12 +243,13 @@
       'Eiffel': 'text/x-eiffel',
       'Erlang': 'text/x-erlang',
       'F#': 'text/x-fsharp',
-      'Fish': 'text/x-javascript', // 回退
+      'Fish': 'text/x-brainfuck', // 回退
       'Forth': 'text/x-forth',
       'Fortran': 'text/x-fortran',
       'Go': 'text/x-go',
       'Groovy': 'text/x-groovy',
       'Haskell': 'text/x-haskell',
+      'Icon': 'text/x-javascript',
       'Java8': 'text/x-java',
       'Java11': 'text/x-java',
       'Java17': 'text/x-java',
@@ -267,6 +274,7 @@
       'Ruby': 'text/x-ruby',
       'Rust': 'text/x-rust',
       'Scala': 'text/x-scala',
+      'Scheme': 'text/x-scheme',
       'Swift': 'text/x-swift',
       'Tcl': 'text/x-tcl',
       'Typescript': 'text/typescript',
