@@ -138,6 +138,15 @@ jobs:
               sudo apt-get install -y nodejs npm
               sudo npm install -g livescript
               ;;
+            "Zig")
+              # 下载最新稳定版 0.16.0
+              wget https://ziglang.org/download/0.16.0/zig-linux-x86_64-0.16.0.tar.xz
+              tar -xf zig-linux-x86_64-0.16.0.tar.xz
+              # 解压出来的文件夹名是 zig-linux-x86_64-0.16.0
+              echo "$PWD/zig-linux-x86_64-0.16.0" >> $GITHUB_PATH
+              # 验证安装
+              zig version
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -414,6 +423,7 @@ jobs:
             "B") EXT="b"; COMPILE="bcause -o program main.b -L/lib64/libb.a"; RUN_CMD="./program" ;;
             "CoffeeScript") EXT="coffee"; COMPILE="npx coffee -c main.coffee"; RUN_CMD="node main.js" ;;
             "LiveScript") EXT="ls"; COMPILE="lsc -c main.ls"; RUN_CMD="node main.js" ;;
+            "Zig") EXT="zig"; COMPILE="zig build-exe main.zig"; RUN_CMD="./main" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
