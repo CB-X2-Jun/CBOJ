@@ -38,13 +38,13 @@ jobs:
               sudo apt-get install -y nodejs npm
               npm init -y
               npm install --save-dev typescript @types/node
-              # 注意：moduleResolution 必须用 node16 或 nodenext，不能用 node（已废弃）
+              # 使用 "bundler" 替代 "node16"，彻底避免 TS5110 报错
               echo '{
                 "compilerOptions": {
                   "target": "ES2020",
                   "module": "CommonJS",
                   "esModuleInterop": true,
-                  "moduleResolution": "node16",
+                  "moduleResolution": "bundler",
                   "types": ["node"],
                   "resolveJsonModule": true,
                   "skipLibCheck": true
