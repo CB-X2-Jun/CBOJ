@@ -139,10 +139,9 @@ jobs:
               sudo npm install -g livescript
               ;;
             "Zig")
-              # 下载最新稳定版 0.16.0
               wget https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
               tar -xf zig-x86_64-linux-0.16.0.tar.xz
-              # 解压出来的文件夹名是 zig-linux-x86_64-0.16.0
+              # 注意：解压出来的文件夹名是 zig-x86_64-linux-0.16.0（与你亲眼所见一致）
               echo "$PWD/zig-x86_64-linux-0.16.0" >> $GITHUB_PATH
               # 验证安装
               zig version
