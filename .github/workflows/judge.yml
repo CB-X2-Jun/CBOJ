@@ -36,18 +36,18 @@ jobs:
               ;;
             "Typescript")
               sudo apt-get install -y nodejs npm
-              # 1. 初始化项目并安装 Node.js 类型定义
               npm init -y
               npm install --save-dev typescript @types/node
-              # 2. 创建最小 tsconfig.json 以支持 Node.js 模块解析
+              # 注意：moduleResolution 必须用 node16 或 nodenext，不能用 node（已废弃）
               echo '{
                 "compilerOptions": {
                   "target": "ES2020",
                   "module": "CommonJS",
                   "esModuleInterop": true,
-                  "moduleResolution": "node",
+                  "moduleResolution": "node16",
                   "types": ["node"],
-                  "resolveJsonModule": true
+                  "resolveJsonModule": true,
+                  "skipLibCheck": true
                 }
               }' > tsconfig.json
               ;;
