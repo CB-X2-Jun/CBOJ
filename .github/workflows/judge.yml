@@ -144,8 +144,8 @@ jobs:
               # 注意：解压出来的文件夹名是 zig-x86_64-linux-0.16.0（与你亲眼所见一致）
               echo "$PWD/zig-x86_64-linux-0.16.0" >> $GITHUB_PATH
               # 验证安装
-              cd zig-x86_64-linux-0.16.0
-              zig version
+              # cd zig-x86_64-linux-0.16.0
+              # zig version
               ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
