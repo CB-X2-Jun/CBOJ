@@ -226,8 +226,8 @@ jobs:
             "C"|"C++"*) LANG_TIME_MULTIPLIER=1.0 ;;
             "Python"*) LANG_TIME_MULTIPLIER=1.5 ;;
             "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
-            "Java"*|"Kotlin JVM"|"Scala"|"Ceylon"|"Groovy") LANG_TIME_MULTIPLIER=2.0 ;;
-            "Clojure") LANG_TIME_MULTIPLIER=5.0 ;;
+            "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Clojure"|"Groovy") LANG_TIME_MULTIPLIER=5.0 ;;
             "Elixir") LANG_TIME_MULTIPLIER=2.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=3.0 ;;
             # "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
