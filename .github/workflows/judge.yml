@@ -38,9 +38,6 @@ jobs:
               sudo apt-get install -y nodejs npm
               npm init -y
               npm install --save-dev typescript @types/node
-              # 只编译 main.ts，不依赖 tsconfig.json，避免误伤其他源码
-              COMPILE="npx tsc main.ts --target ES2020 --module CommonJS --esModuleInterop --moduleResolution bundler --types node --skipLibCheck"
-              RUN_CMD="node main.js"
               ;;
             "Lua") sudo apt-get install -y lua5.4 ;;
             "Perl") sudo apt-get install -y perl ;;
@@ -377,7 +374,7 @@ jobs:
             "Ruby") EXT="rb"; COMPILE=""; RUN_CMD="ruby main.rb" ;;
             "PHP") EXT="php"; COMPILE=""; RUN_CMD="php main.php" ;;
             "Javascript") EXT="js"; COMPILE=""; RUN_CMD="node main.js" ;;
-            "Typescript") EXT="ts"; COMPILE="npx tsc --project ."; RUN_CMD="node main.js" ;;
+            "Typescript") EXT="ts"; COMPILE="npx tsc main.ts --target ES2020 --module CommonJS --esModuleInterop --moduleResolution bundler --types node --skipLibCheck"; RUN_CMD="node main.js" ;;
             "C#") EXT="cs"; COMPILE="mcs main.cs"; RUN_CMD="mono main.exe" ;;
             "F#") EXT="fs"; COMPILE="fsharpc main.fs"; RUN_CMD="mono main.exe" ;;
             "D") EXT="d"; COMPILE="gdc -O2 main.d -o program"; RUN_CMD="./program" ;;
