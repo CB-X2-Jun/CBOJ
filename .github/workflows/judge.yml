@@ -130,6 +130,14 @@ jobs:
               sudo make install
               bcause --version || true
               ;;
+            "CoffeeScript")
+              sudo apt-get install -y nodejs npm
+              sudo npm install -g coffeescript
+              ;;
+            "LiveScript")
+              sudo apt-get install -y nodejs npm
+              sudo npm install -g livescript
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -404,6 +412,8 @@ jobs:
             # "Logo") EXT="lg"; COMPILE=""; RUN_CMD="xvfb-run -a logo main.lg" ;;
             "Elixir") EXT="exs"; COMPILE=""; RUN_CMD="elixir main.exs" ;;
             "B") EXT="b"; COMPILE="bcause -o program main.b -L/lib64/libb.a"; RUN_CMD="./program" ;;
+            "CoffeeScript") EXT="coffee"; COMPILE="coffee -c main.coffee"; RUN_CMD="node main.js" ;;
+            "LiveScript") EXT="ls"; COMPILE="lsc -c main.ls"; RUN_CMD="node main.js" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
