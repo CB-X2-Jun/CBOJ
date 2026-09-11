@@ -167,7 +167,8 @@ jobs:
             "Forth") sudo apt-get install -y gforth ;;
             "Groovy") sudo apt-get install -y groovy ;;
             "Icon") sudo apt-get install -y icont iconx ;;
-            "Scheme") sudo apt-get install -y mit-scheme ;;
+            "Scheme") sudo apt-get install -y guile-3.0 ;;
+            "R") sudo apt-get install -y r-base-core ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -451,7 +452,8 @@ jobs:
             "Forth") EXT="fs"; COMPILE=""; RUN_CMD="gforth main.fs" ;;
             "Groovy") EXT="groovy"; COMPILE=""; RUN_CMD="groovy main.groovy" ;;
             "Icon") EXT="icn"; COMPILE="icont main.icn"; RUN_CMD="iconx main" ;;
-            "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="mit-scheme --quiet < main.scm" ;;
+            "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="guile main.scm" ;;
+            "R") EXT="R"; COMPILE=""; RUN_CMD="Rscript main.R" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
