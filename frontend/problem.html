@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <!-- 常用模式（按需加载） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>  <!-- C/C++/Java/Objective-C/Scala -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
@@ -43,9 +43,23 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/groovy/groovy.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/scheme/scheme.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/brainfuck/brainfuck.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clojure/clojure.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/dart/dart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/r/r.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/eiffel/eiffel.min.js"></script>
   <!-- 官方不支持可以自己写 -->
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/ada/ada.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/b/b.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/basic/basic.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/befunge/befunge.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/elixir/elixir.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/fsharp/fsharp.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/fish/fish.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/icon/icon.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/nim/nim.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/ocaml/ocaml.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/prolog/prolog.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/zig/zig.min.js"></script>
   <!-- 可能缺失的模式，可以回退到 plain -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -53,6 +67,9 @@
     .CodeMirror { height: auto; min-height: 300px; border: 1px solid #d1d5da; border-radius: 6px; font-size: 14px; }
     .CodeMirror-scroll { min-height: 300px; }
     .cm-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; align-items: center; }
+    .cm-editor-toolbar label { font-weight: 600; }
+    .cm-editor-toolbar input[type="number"] { width: 64px; padding: 0.3rem; border-radius: 4px; border: 1px solid #ccc; }
+    .cm-editor-toolbar .field { display: flex; align-items: center; gap: 0.4rem; }
   </style>
 </head>
 <body>
@@ -62,8 +79,8 @@
     <div class="card" style="margin-top: 2rem;">
       <h3>📤 提交代码</h3>
       <div class="cm-editor-toolbar">
-        <div style="display: flex; align-items: center; gap: 0.4rem;">
-          <label for="language" style="font-weight: 600;">语言</label>
+        <div class="field">
+          <label for="language">语言</label>
           <select id="language" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
             <option value="Ada">Ada (GNAT 13.2.0)</option>
             <option value="B">B (BCause 0.1)</option>
@@ -131,10 +148,18 @@
             <option value="Zig">Zig 0.16.0</option>
           </select>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.4rem;">
-          <label for="font-size" style="font-weight: 600;">字号</label>
-          <input type="number" id="font-size" value="14" min="10" max="28" style="width: 60px; padding: 0.3rem; border-radius: 4px; border: 1px solid #ccc;">
+        <div class="field">
+          <label for="font-size">字号</label>
+          <input type="number" id="font-size" value="14" min="10" max="28">
           <span>px</span>
+        </div>
+        <div class="field">
+          <label for="indent-size">缩进空格数</label>
+          <input type="number" id="indent-size" value="4" min="1" max="8">
+        </div>
+        <div class="field">
+          <label for="tab-size">Tab 大小</label>
+          <input type="number" id="tab-size" value="4" min="2" max="8">
         </div>
         <button id="reset-editor-btn" class="btn" style="background: #6c757d; padding: 0.2rem 0.8rem;">重置编辑器</button>
       </div>
@@ -217,6 +242,8 @@
     const textarea = document.getElementById('editor-container');
     const languageSelect = document.getElementById('language');
     const fontSizeInput = document.getElementById('font-size');
+    const indentSizeInput = document.getElementById('indent-size');
+    const tabSizeInput = document.getElementById('tab-size');
     const resetBtn = document.getElementById('reset-editor-btn');
 
     // 模式映射（CodeMirror 5 的 mode 名称）
@@ -224,9 +251,9 @@
       'Ada': 'text/x-ada',
       'B': 'text/x-b',
       'Bash': 'text/x-sh',
-      'BASIC': 'text/x-vb',
-      'Befunge-93': 'text/x-brainfuck',
-      'Befunge-98': 'text/x-brainfuck',
+      'BASIC': 'text/x-basic',
+      'Befunge-93': 'text/x-befunge',
+      'Befunge-98': 'text/x-befunge',
       'Brainfuck': 'text/x-brainfuck',
       'C': 'text/x-csrc',
       'C#': 'text/x-csharp',
@@ -243,17 +270,18 @@
       'CoffeeScript': 'text/x-coffeescript',
       'Common Lisp': 'text/x-common-lisp',
       'D': 'text/x-d',
-      'Dart': 'text/x-dart',
+      'Dart': 'application/dart',
       'Eiffel': 'text/x-eiffel',
+      'Elixir': 'text/x-elixir',
       'Erlang': 'text/x-erlang',
       'F#': 'text/x-fsharp',
-      'Fish': 'text/x-brainfuck', // 回退
+      'Fish': 'text/x-fish',
       'Forth': 'text/x-forth',
       'Fortran': 'text/x-fortran',
       'Go': 'text/x-go',
       'Groovy': 'text/x-groovy',
       'Haskell': 'text/x-haskell',
-      'Icon': 'text/x-javascript',
+      'Icon': 'text/x-icon',
       'Java8': 'text/x-java',
       'Java11': 'text/x-java',
       'Java17': 'text/x-java',
@@ -277,7 +305,7 @@
       'Python3': 'text/x-python',
       'R': 'text/x-rsrc',
       'Ruby': 'text/x-ruby',
-      'Rust': 'text/x-rust',
+      'Rust': 'text/x-rustsrc',
       'Scala': 'text/x-scala',
       'Scheme': 'text/x-scheme',
       'Swift': 'text/x-swift',
@@ -289,18 +317,38 @@
     // 当前编辑器实例
     let editor = null;
 
+    // 读取两个数值（带范围钳制）
+    function readIndentSize() {
+      let v = parseInt(indentSizeInput.value, 10);
+      if (isNaN(v)) v = 4;
+      if (v < 1) v = 1;
+      if (v > 8) v = 8;
+      indentSizeInput.value = v;
+      return v;
+    }
+    function readTabSize() {
+      let v = parseInt(tabSizeInput.value, 10);
+      if (isNaN(v)) v = 4;
+      if (v < 2) v = 2;
+      if (v > 8) v = 8;
+      tabSizeInput.value = v;
+      return v;
+    }
+
     // 初始化编辑器
     function initEditor(initialCode = '') {
       const mode = modeMap[languageSelect.value] || 'text/plain';
       const fontSize = parseInt(fontSizeInput.value) || 14;
+      const indentUnit = readIndentSize();
+      const tabSize = readTabSize();
       const savedFont = localStorage.getItem('cboj-font-preference');
       const fontFamily = savedFont ? `"${savedFont}", "Consolas", "Courier New", monospace` : '"Consolas", "Courier New", monospace';
 
       editor = CodeMirror.fromTextArea(textarea, {
         mode: mode,
         lineNumbers: true,
-        indentUnit: 4,
-        tabSize: 4,
+        indentUnit: indentUnit,
+        tabSize: tabSize,
         indentWithTabs: false,
         lineWrapping: true,
         theme: 'default',
@@ -340,8 +388,6 @@
       if (!editor) return;
       const mode = modeMap[newLang] || 'text/plain';
       editor.setOption('mode', mode);
-      // 有些模式需要额外加载，但 CodeMirror 会尝试加载，如果未加载则会报错，但不会影响已有功能
-      // 为了安全，可以尝试手动加载模式（但 CDN 已预加载多数常用模式）
     }
 
     // 更新字号
@@ -370,6 +416,28 @@
       if (val < 10) e.target.value = 10;
       if (val > 28) e.target.value = 28;
       updateFontSize(parseInt(e.target.value));
+    });
+
+    // 缩进空格数改变
+    indentSizeInput.addEventListener('change', () => {
+      const v = readIndentSize();
+      if (editor) {
+        editor.setOption('indentUnit', v);
+        editor.refresh();
+      }
+    });
+    // 允许直接输入后按回车生效
+    indentSizeInput.addEventListener('input', () => {
+      // 输入过程中不钳制，等 change 再处理
+    });
+
+    // Tab 大小改变
+    tabSizeInput.addEventListener('change', () => {
+      const v = readTabSize();
+      if (editor) {
+        editor.setOption('tabSize', v);
+        editor.refresh();
+      }
     });
 
     resetBtn.addEventListener('click', resetEditor);
