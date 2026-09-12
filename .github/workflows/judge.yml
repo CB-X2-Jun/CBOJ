@@ -169,6 +169,7 @@ jobs:
             "Icon") sudo apt-get install -y icont iconx ;;
             "Scheme") sudo apt-get install -y guile-3.0 ;;
             "R") sudo apt-get install -y r-base-core ;;
+            "Agda") sudo apt-get install -y agda ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -215,7 +216,7 @@ jobs:
           case "$LANG" in
             "Julia") MEM_MULTIPLIER=8 ;;
             "Java8"|"Java11"|"Java17"|"Java21"|"Kotlin JVM"|"Scala"|"Clojure"|"Ceylon"|"Groovy") MEM_MULTIPLIER=5 ;;
-            "Haskell"|"Swift"|"Erlang") MEM_MULTIPLIER=3 ;;
+            "Haskell"|"Swift"|"Erlang"|"Agda") MEM_MULTIPLIER=3 ;;
             "Elixir") MEM_MULTIPLIER=3 ;;
             *) MEM_MULTIPLIER=1 ;;
           esac
@@ -231,7 +232,8 @@ jobs:
             "PyPy"*) LANG_TIME_MULTIPLIER=2.0 ;;
             "Java"*|"Kotlin JVM"|"Scala"|"Ceylon") LANG_TIME_MULTIPLIER=2.0 ;;
             "Clojure"|"Groovy") LANG_TIME_MULTIPLIER=5.0 ;;
-            "Elixir") LANG_TIME_MULTIPLIER=2.0 ;;
+            "Agda") LANG_TIME_MULTIPLIER=3.0 ;;
+            "Elixir"|"R") LANG_TIME_MULTIPLIER=2.0 ;;
             "Erlang") LANG_TIME_MULTIPLIER=3.0 ;;
             # "Powershell") LANG_TIME_MULTIPLIER=4.0 ;;
             "Julia") LANG_TIME_MULTIPLIER=1.5 ;;
@@ -454,6 +456,7 @@ jobs:
             "Icon") EXT="icn"; COMPILE="icont main.icn"; RUN_CMD="iconx main" ;;
             "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="guile main.scm" ;;
             "R") EXT="R"; COMPILE=""; RUN_CMD="Rscript main.R" ;;
+            "Agda") EXT="agda"; COMPILE="agda --compile main.agda"; RUN_CMD="./main" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
