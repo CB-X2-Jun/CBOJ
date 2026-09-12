@@ -12,6 +12,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set UTF-8 Locale
+        run: echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
+        
       - name: Install Single Language
         env:
           LANG: ${{ github.event.client_payload.language }}
