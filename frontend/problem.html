@@ -49,6 +49,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/eiffel/eiffel.min.js"></script>
   <!-- 官方不支持可以自己写 -->
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/ada/ada.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/agda/agda.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/b/b.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/basic/basic.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/befunge/befunge.min.js"></script>
@@ -83,6 +84,7 @@
           <label for="language">语言</label>
           <select id="language" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
             <option value="Ada">Ada (GNAT 13.2.0)</option>
+            <option value="Agda">Agda 2.6.3</option>
             <option value="B">B (BCause 0.1)</option>
             <option value="Bash">Bash 5.2.21</option>
             <option value="BASIC">BASIC (Yabasic 2.90.3)</option>
@@ -249,6 +251,7 @@
     // 模式映射（CodeMirror 5 的 mode 名称）
     const modeMap = {
       'Ada': 'text/x-ada',
+      'Agda': 'text/x-agda',
       'B': 'text/x-b',
       'Bash': 'text/x-sh',
       'BASIC': 'text/x-basic',
