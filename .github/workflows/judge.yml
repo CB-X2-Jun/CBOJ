@@ -169,7 +169,7 @@ jobs:
             "Icon") sudo apt-get install -y icont iconx ;;
             "Scheme") sudo apt-get install -y guile-3.0 ;;
             "R") sudo apt-get install -y r-base-core ;;
-            "Agda") sudo apt-get install -y agda ;;
+            "Agda") sudo apt-get install -y agda; sudo chmod -R a+w /usr/share/agda-stdlib ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
