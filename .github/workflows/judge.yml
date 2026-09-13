@@ -459,7 +459,7 @@ jobs:
             "Icon") EXT="icn"; COMPILE="icont main.icn"; RUN_CMD="iconx main" ;;
             "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="guile main.scm" ;;
             "R") EXT="R"; COMPILE=""; RUN_CMD="Rscript main.R" ;;
-            "Agda") EXT="agda"; COMPILE="agda --guardedness -i /usr/share/agda-stdlib --compile main.agda"; RUN_CMD="./main" ;;
+            "Agda") EXT="agda"; COMPILE="agda --guardedness -i /usr/share/agda-stdlib --ghc-flag=-Wwarn --compile main.agda"; RUN_CMD="./main" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
