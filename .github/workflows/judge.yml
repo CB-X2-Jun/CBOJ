@@ -173,6 +173,11 @@ jobs:
             "Scheme") sudo apt-get install -y guile-3.0 ;;
             "R") sudo apt-get install -y r-base-core ;;
             "Agda") sudo apt-get install -y agda; sudo chmod -R a+w /usr/share/agda-stdlib ;;
+            "Thue"|"Thue with l")
+              sudo apt-get install -y gcc git
+              git clone --depth 1 https://github.com/jcolag/Thue.git /tmp/Thue
+              gcc -O2 -o /tmp/Thue/thue /tmp/Thue/thue.c
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -460,6 +465,8 @@ jobs:
             "Scheme") EXT="scm"; COMPILE=""; RUN_CMD="guile main.scm" ;;
             "R") EXT="R"; COMPILE=""; RUN_CMD="Rscript main.R" ;;
             "Agda") EXT="agda"; COMPILE="agda --guardedness -i /usr/share/agda-stdlib --ghc-flag=-Wwarn --compile main.agda"; RUN_CMD="./main" ;;
+            "Thue") EXT="t"; COMPILE=""; RUN_CMD="/tmp/Thue/thue main.t" ;;
+            "Thue with l") EXT="t"; COMPILE=""; RUN_CMD="/tmp/Thue/thue main.t l" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
