@@ -271,6 +271,38 @@
             </td>
           </tr>
           <tr>
+            <td class="lang-name">Agda</td>
+            <td class="lang-note">
+              必须定义 <code>main : IO ⊤</code>。Agda 通过 MAlonzo 后端编译为 Haskell 再交给 GHC 编译执行，因此有以下几处坑：<br><br>
+          
+              <strong>① IO 原语需要手动 <code>postulate</code></strong>：<code>Agda.Builtin.IO</code> 只提供 <code>IO</code> 类型，不导出 <code>getLine</code>、<code>putStrLn</code>、<code>_&gt;&gt;=_</code>，必须自行声明并用 <code>{-# COMPILE GHC ... #-}</code> 绑定到 Haskell：
+              <pre style="background:#f6f8fa;padding:0.6rem 0.9rem;border-radius:4px;overflow-x:auto;font-size:0.85rem;margin:0.4rem 0;">postulate
+            getLine  : IO String
+            putStrLn : String → IO ⊤
+            _&gt;&gt;=_    : ∀ {A B : Set} → IO A → (A → IO B) → IO B
+          
+          {-# FOREIGN GHC import qualified Data.Text.IO as T #-}
+          {-# COMPILE GHC getLine  = T.getLine #-}
+          {-# COMPILE GHC putStrLn = T.putStrLn #-}
+          {-# COMPILE GHC _&gt;&gt;=_    = \_ _ m f -&gt; m &gt;&gt;= f #-}</pre>
+          
+              <strong>② <code>_&gt;&gt;=_</code> 不能直接写成 <code>(&gt;&gt;=)</code></strong>：前两个参数是隐式类型参数，必须写成 <code>\_ _ m f -&gt; m &gt;&gt;= f</code>，否则 MAlonzo 生成的 Haskell 会因类型不匹配而编译失败（报错形如 <em>(&gt;&gt;=) is applied to too few arguments</em>）。<br><br>
+          
+              <strong>③ 终止检查</strong>：递归函数必须直接对归纳类型的结构子项做模式匹配（如 <code>(x ∷ xs)</code>），不能在递归调用里用 <code>tailOrNil xs</code>、<code>headOrZero xs</code> 这类辅助函数，否则 Agda 会报 <em>Termination checking failed</em>。<br><br>
+          
+              <strong>④ 字符串与字符</strong>：<code>primStringToList</code> / <code>primStringFromList</code> 在 <code>Agda.Builtin.String</code>；字符与自然数互转用 <code>primCharToNat</code> / <code>primNatToChar</code>。
+            </td>
+          </tr>
+          <tr>
+            <td class="lang-name">Thue / Thue with l</td>
+            <td class="lang-note">
+              无需特殊入口，直接提交规则 + 初始状态。规则终止行为单独一行的 <code>::=</code>。<br>
+              <strong><code>Thue</code></strong>：默认非确定性模式，每次随机选择可应用的规则（符合 Thue 语言原意）。<br>
+              <strong><code>Thue with l</code></strong>：确定性左到右模式，同一份代码每次运行结果一致，适合调试和需要可复现的场景。<br>
+              <strong>⚠️ 本实现限制</strong>：单条规则左右各最多 63 字符，规则总数最多 128 条，状态空间最多 16KB。
+            </td>
+          </tr>
+          <tr>
             <td class="lang-name">C / C++</td>
             <td class="lang-note"><code>int main()</code> 或 <code>int main(void)</code></td>
           </tr>
@@ -495,7 +527,7 @@
             <td>2048</td>
           </tr>
           <tr>
-            <td>Haskell</td>
+            <td>Haskell / Agda</td>
             <td>1.5</td>
             <td>1500</td>
             <td>3</td>
