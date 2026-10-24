@@ -198,6 +198,7 @@ jobs:
                 'prog="$(realpath "$1")"' \
                 'input="/tmp/zir_input.$$"' \
                 'cat > "$input"' \
+                '[ -s "$input" ] || printf "\n" > "$input"' \
                 'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
                 'rc=$?' \
                 'rm -f "$input"' \
