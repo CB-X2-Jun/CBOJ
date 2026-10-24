@@ -187,13 +187,24 @@ jobs:
               bqn --version
               ;;
             "Zirconium")
-              # 复用 BQN 安装逻辑（确保 bqn 可用）
               sudo apt-get install -y git build-essential
+              # 先装 BQN（apt 有包就秒装，没有才源码编译）
               git clone --recurse-submodules --shallow-submodules --depth 1 https://github.com/dzaima/CBQN.git /tmp/CBQN
               cd /tmp/CBQN && make o3 FFI=0 REPLXX=0 && sudo make install FFI=0 REPLXX=0
+              # 克隆 Zirconium 解释器
               git clone --depth 1 https://github.com/razetime/Zirconium.git /opt/Zirconium
-              # 列出目录，方便你在日志里确认解释器文件名
-              ls /opt/Zirconium
+              # 创建包装脚本：把 stdin 写成临时文件，作为第二个参数传给解释器
+              sudo tee /usr/local/bin/zirconium-run > /dev/null << 'EOF'
+            #!/bin/bash
+            prog="$(realpath "$1")"
+            input="/tmp/zir_input.$$"
+            cat > "$input"
+            bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"
+            rc=$?
+            rm -f "$input"
+            exit $rc
+            EOF
+              sudo chmod +x /usr/local/bin/zirconium-run
               ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
@@ -484,7 +495,7 @@ jobs:
             "Agda") EXT="agda"; COMPILE="agda --guardedness -i /usr/share/agda-stdlib --ghc-flag=-Wwarn --compile main.agda"; RUN_CMD="./main" ;;
             "Thue") EXT="t"; COMPILE=""; RUN_CMD="/tmp/Thue/thue main.t" ;;
             "Thue with l") EXT="t"; COMPILE=""; RUN_CMD="/tmp/Thue/thue main.t l" ;;
-            "Zirconium") EXT="zc"; COMPILE=""; RUN_CMD="bqn /opt/Zirconium/Zirconium.bqn main.zc" ;;
+            "Zirconium") EXT="zc"; COMPILE=""; RUN_CMD="zirconium-run main.zc" ;;
             "BQN") EXT="bqn"; COMPILE=""; RUN_CMD="bqn main.bqn" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
