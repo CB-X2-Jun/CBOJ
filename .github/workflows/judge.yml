@@ -188,22 +188,21 @@ jobs:
               ;;
             "Zirconium")
               sudo apt-get install -y git build-essential
-              # 先装 BQN（apt 有包就秒装，没有才源码编译）
               git clone --recurse-submodules --shallow-submodules --depth 1 https://github.com/dzaima/CBQN.git /tmp/CBQN
               cd /tmp/CBQN && make o3 FFI=0 REPLXX=0 && sudo make install FFI=0 REPLXX=0
               # 克隆 Zirconium 解释器
               git clone --depth 1 https://github.com/razetime/Zirconium.git /opt/Zirconium
-              # 创建包装脚本：把 stdin 写成临时文件，作为第二个参数传给解释器
-              sudo tee /usr/local/bin/zirconium-run > /dev/null << 'EOF'
-            #!/bin/bash
-            prog="$(realpath "$1")"
-            input="/tmp/zir_input.$$"
-            cat > "$input"
-            bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"
-            rc=$?
-            rm -f "$input"
-            exit $rc
-            EOF
+              # 用 printf 写包装脚本，避免 heredoc 缩进问题
+              printf '%s\n' \
+                '#!/bin/bash' \
+                'prog="$(realpath "$1")"' \
+                'input="/tmp/zir_input.$$"' \
+                'cat > "$input"' \
+                'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
+                'rc=$?' \
+                'rm -f "$input"' \
+                'exit $rc' \
+                | sudo tee /usr/local/bin/zirconium-run > /dev/null
               sudo chmod +x /usr/local/bin/zirconium-run
               ;;
             "Bash") echo "Bash is built-in" ;;
