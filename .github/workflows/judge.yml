@@ -6,7 +6,7 @@ on:
 
 jobs:
   judge:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -191,11 +191,13 @@ jobs:
               git clone --recurse-submodules --shallow-submodules --depth 1 https://github.com/dzaima/CBQN.git /tmp/CBQN
               cd /tmp/CBQN && make o3 FFI=0 REPLXX=0 && sudo make install FFI=0 REPLXX=0
               git clone --depth 1 https://github.com/razetime/Zirconium.git /opt/Zirconium
-              # 打补丁：过滤输入文件中的空行，避免 ILen 对空字符串崩溃
+              # 补丁1：过滤输入文件空行，避免 ILen 对空字符串崩溃
               sed -i 's/{f‿h:(ILen¨•FLines h)/{f‿h:(ILen¨(0<≠¨)⊸\/•FLines h)/' /opt/Zirconium/Zirconium.bqn
-              # 验证补丁生效
+              # 补丁2：修复 ! 站不退出程序的问题
+              sed -i 's|{𝕨>0?"Program has ended."!𝕨>0;0}|{𝕨>0?•Exit 0;0}|' /opt/Zirconium/Zirconium.bqn
+              # 验证两个补丁都生效
               grep -n '0<≠¨' /opt/Zirconium/Zirconium.bqn
-              # 包装脚本（去掉 printf "\n"，空行已被过滤，不需要兜底）
+              grep -n '•Exit 0' /opt/Zirconium/Zirconium.bqn
               printf '%s\n' \
                 '#!/bin/bash' \
                 'prog="$(realpath "$1")"' \
