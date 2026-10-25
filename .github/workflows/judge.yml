@@ -190,29 +190,22 @@ jobs:
               sudo apt-get install -y git build-essential
               git clone --recurse-submodules --shallow-submodules --depth 1 https://github.com/dzaima/CBQN.git /tmp/CBQN
               cd /tmp/CBQN && make o3 FFI=0 REPLXX=0 && sudo make install FFI=0 REPLXX=0
-              # 克隆 Zirconium 解释器
               git clone --depth 1 https://github.com/razetime/Zirconium.git /opt/Zirconium
-              # 用 printf 写包装脚本，避免 heredoc 缩进问题
+              # 打补丁：过滤输入文件中的空行，避免 ILen 对空字符串崩溃
+              sed -i 's/{f‿h:(ILen¨•FLines h)/{f‿h:(ILen¨(0<≠¨)⊸\/•FLines h)/' /opt/Zirconium/Zirconium.bqn
+              # 验证补丁生效
+              grep -n '0<≠¨' /opt/Zirconium/Zirconium.bqn
+              # 包装脚本（去掉 printf "\n"，空行已被过滤，不需要兜底）
               printf '%s\n' \
-                  '#!/bin/bash' \
-                  'echo "DEBUG: pwd=$(pwd)" >&2' \
-                  'echo "DEBUG: arg1=$1" >&2' \
-                  'ls -la >&2' \
-                  'prog="$(realpath "$1" 2>/dev/null || true)"' \
-                  'echo "DEBUG: prog=$prog" >&2' \
-                  'if [ -z "$prog" ] || [ ! -f "$prog" ]; then' \
-                  '  echo "ERROR: program file not found: $1" >&2' \
-                  '  exit 1' \
-                  'fi' \
-                  'echo "DEBUG: prog size=$(wc -c < "$prog")" >&2' \
-                  'input="/tmp/zir_input.$$"' \
-                  'cat > "$input"' \
-                  '[ -s "$input" ] || printf "\n" > "$input"' \
-                  'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
-                  'rc=$?' \
-                  'rm -f "$input"' \
-                  'exit $rc' \
-                  | sudo tee /usr/local/bin/zirconium-run > /dev/null
+                '#!/bin/bash' \
+                'prog="$(realpath "$1")"' \
+                'input="/tmp/zir_input.$$"' \
+                'cat > "$input"' \
+                'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
+                'rc=$?' \
+                'rm -f "$input"' \
+                'exit $rc' \
+                | sudo tee /usr/local/bin/zirconium-run > /dev/null
               sudo chmod +x /usr/local/bin/zirconium-run
               ;;
             "Bash") echo "Bash is built-in" ;;
