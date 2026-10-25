@@ -194,16 +194,25 @@ jobs:
               git clone --depth 1 https://github.com/razetime/Zirconium.git /opt/Zirconium
               # 用 printf 写包装脚本，避免 heredoc 缩进问题
               printf '%s\n' \
-                '#!/bin/bash' \
-                'prog="$(realpath "$1")"' \
-                'input="/tmp/zir_input.$$"' \
-                'cat > "$input"' \
-                '[ -s "$input" ] || printf "\n" > "$input"' \
-                'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
-                'rc=$?' \
-                'rm -f "$input"' \
-                'exit $rc' \
-                | sudo tee /usr/local/bin/zirconium-run > /dev/null
+                  '#!/bin/bash' \
+                  'echo "DEBUG: pwd=$(pwd)" >&2' \
+                  'echo "DEBUG: arg1=$1" >&2' \
+                  'ls -la >&2' \
+                  'prog="$(realpath "$1" 2>/dev/null || true)"' \
+                  'echo "DEBUG: prog=$prog" >&2' \
+                  'if [ -z "$prog" ] || [ ! -f "$prog" ]; then' \
+                  '  echo "ERROR: program file not found: $1" >&2' \
+                  '  exit 1' \
+                  'fi' \
+                  'echo "DEBUG: prog size=$(wc -c < "$prog")" >&2' \
+                  'input="/tmp/zir_input.$$"' \
+                  'cat > "$input"' \
+                  '[ -s "$input" ] || printf "\n" > "$input"' \
+                  'bqn /opt/Zirconium/Zirconium.bqn "$prog" "$input"' \
+                  'rc=$?' \
+                  'rm -f "$input"' \
+                  'exit $rc' \
+                  | sudo tee /usr/local/bin/zirconium-run > /dev/null
               sudo chmod +x /usr/local/bin/zirconium-run
               ;;
             "Bash") echo "Bash is built-in" ;;
