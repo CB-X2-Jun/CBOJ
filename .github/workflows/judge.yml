@@ -301,7 +301,7 @@ jobs:
               echo "Using Java 8:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
@@ -322,7 +322,7 @@ jobs:
               echo "Using Java 11:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
@@ -343,7 +343,7 @@ jobs:
               echo "Using Java 17:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
@@ -364,7 +364,7 @@ jobs:
               echo "Using Java 21:"; java -version
               echo "$CODE_RAW" > Main.java
               if ! javac Main.java 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
@@ -396,7 +396,7 @@ jobs:
               if [ $? -ne 0 ]; then
                   echo "===== Eiffel compilation failed ====="
                   cat eiffel.log
-                  ERROR_MSG=$(cat eiffel.log | head -c 500 | jq -sR .)
+                  ERROR_MSG=$(cat eiffel.log | head -c 8000 | jq -sR .)
                   curl -X POST "$CALLBACK_URL" \
                     -H "Content-Type: application/json" \
                     -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
@@ -428,7 +428,7 @@ jobs:
               echo 'module cboj "1.0.0" {}' > source/cboj/module.ceylon
               echo "$CODE_RAW" > source/cboj/run.ceylon
               if ! ceylon compile --source source cboj 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
@@ -509,7 +509,7 @@ jobs:
             echo "$CODE_RAW" > "main.$EXT"
             if [[ -n "$COMPILE" ]]; then
               if ! $COMPILE 2> compile_error.log; then
-                ERROR_MSG=$(cat compile_error.log | head -c 500 | jq -sR .)
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
                 curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
                   -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
                 exit 0
