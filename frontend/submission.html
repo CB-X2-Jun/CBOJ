@@ -62,8 +62,12 @@
       <p><strong>内存：</strong>${data.memory_used ?? '-'}MB</p>
       <p><strong>提交时间：</strong>${new Date(data.created_at).toLocaleString()}</p>
       ${data.finished_at ? `<p><strong>完成时间：</strong>${new Date(data.finished_at).toLocaleString()}</p>` : ''}
-      ${data.result ? `<p><strong>结果详情：</strong><pre>${data.result}</pre></p>` : ''}
+      ${data.result ? `<p><strong>结果详情：</strong><pre id="result-pre">${data.result}</pre></p>` : ''}
     `;
+
+    if (data.result) {
+      document.getElementById('result-pre').textContent = data.result;
+    }
 
     // 渲染测试点详情
     const detailsGrid = document.getElementById('details-grid');
