@@ -74,6 +74,49 @@
   <!-- 可能缺失的模式，可以回退到 plain -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+    /* 引入 BQN386（官方） */
+    @font-face {
+      font-family: 'BQN386';
+      src: url('https://dzaima.github.io/BQN386/BQN386.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* 引入你自己托管的字体 */
+    @font-face {
+      font-family: 'Maple Mono';
+      src: url('https://cb-x2-jun.github.io/oj-fonts/MapleMono-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Lucida Console';
+      src: url('https://cb-x2-jun.github.io/oj-fonts/LUCON.TTF') format('truetype');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Consolas';
+      src: url('https://cb-x2-jun.github.io/oj-fonts/CONSOLA.TTF') format('truetype');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Courier New';
+      src: url('https://cb-x2-jun.github.io/oj-fonts/COUR.TTF') format('truetype');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Monocraft';
+      src: url('https://cb-x2-jun.github.io/oj-fonts/Monocraft.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    /* 原有的编辑器 CSS ... */
+  </style>
   <style>
     .CodeMirror { height: auto; min-height: 300px; border: 1px solid #d1d5da; border-radius: 6px; font-size: 14px; }
     .CodeMirror-scroll { min-height: 300px; }
@@ -177,6 +220,19 @@
           <label for="tab-size">Tab 大小</label>
           <input type="number" id="tab-size" value="4" min="2" max="8">
         </div>
+        <!-- 新增：字体选择 -->
+        <div class="field">
+          <label for="font-family">字体</label>
+          <select id="font-family" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="Consolas">Consolas</option>
+            <option value="Maple Mono">Maple Mono</option>
+            <option value="Lucida Console">Lucida Console</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Monocraft">Monocraft</option>
+            <option value="BQN386">BQN386</option>
+            <option value="monospace">monospace</option>
+          </select>
+        </div>
         <button id="reset-editor-btn" class="btn" style="background: #6c757d; padding: 0.2rem 0.8rem;">重置编辑器</button>
       </div>
 
@@ -258,6 +314,7 @@
     const textarea = document.getElementById('editor-container');
     const languageSelect = document.getElementById('language');
     const fontSizeInput = document.getElementById('font-size');
+    const fontFamilySelect = document.getElementById('font-family');
     const indentSizeInput = document.getElementById('indent-size');
     const tabSizeInput = document.getElementById('tab-size');
     const resetBtn = document.getElementById('reset-editor-btn');
@@ -356,14 +413,29 @@
       return v;
     }
 
+    // 获取字体栈逻辑
+    function getFontStack(selectedFont) {
+      // 如果选的是 monospace，直接返回 monospace
+      if (selectedFont === 'monospace') return 'monospace';
+      // 如果选的是 BQN386，只给 BQN386 和 monospace
+      if (selectedFont === 'BQN386') return '"BQN386", monospace';
+      
+      // 其他情况：选中的字体, BQN386 作为符号兜底, monospace 作为最终兜底
+      return `"${selectedFont}", "BQN386", monospace`;
+    }
+
     // 初始化编辑器
     function initEditor(initialCode = '') {
       const mode = modeMap[languageSelect.value] || 'text/plain';
       const fontSize = parseInt(fontSizeInput.value) || 14;
       const indentUnit = readIndentSize();
       const tabSize = readTabSize();
-      const savedFont = localStorage.getItem('cboj-font-preference');
-      const fontFamily = savedFont ? `"${savedFont}", "Consolas", "Courier New", monospace` : '"Consolas", "Courier New", monospace';
+      
+      // 读取保存的字体，如果没有默认 Consolas
+      const savedFont = localStorage.getItem('cboj-font-preference') || 'Consolas';
+      fontFamilySelect.value = savedFont; // 同步下拉框
+      
+      const fontFamily = getFontStack(savedFont);
 
       editor = CodeMirror.fromTextArea(textarea, {
         mode: mode,
@@ -430,6 +502,16 @@
     // 事件绑定
     languageSelect.addEventListener('change', (e) => {
       changeLanguage(e.target.value);
+    });
+
+    // 新增：监听字体改变
+    fontFamilySelect.addEventListener('change', (e) => {
+      const selectedFont = e.target.value;
+      localStorage.setItem('cboj-font-preference', selectedFont); // 记住偏好
+      if (editor) {
+        editor.getWrapperElement().style.fontFamily = getFontStack(selectedFont);
+        editor.refresh();
+      }
     });
 
     fontSizeInput.addEventListener('change', (e) => {
