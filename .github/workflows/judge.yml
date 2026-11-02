@@ -210,6 +210,17 @@ jobs:
                 | sudo tee /usr/local/bin/zirconium-run > /dev/null
               sudo chmod +x /usr/local/bin/zirconium-run
               ;;
+            "Malbolge")
+              sudo apt-get install -y python3 python3-pip
+              pip3 install malbolge
+              ;;
+            "V")
+              sudo apt-get install -y git build-essential
+              git clone --depth 1 https://github.com/vlang/v /tmp/v
+              cd /tmp/v
+              make
+              sudo ./v symlink
+              ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -501,6 +512,8 @@ jobs:
             "Thue with l") EXT="t"; COMPILE=""; RUN_CMD="/tmp/Thue/thue main.t l" ;;
             "Zirconium") EXT="zc"; COMPILE=""; RUN_CMD="zirconium-run main.zc" ;;
             "BQN") EXT="bqn"; COMPILE=""; RUN_CMD="bqn main.bqn" ;;
+            "Malbolge") EXT="mb"; COMPILE=""; RUN_CMD="python3 -m malbolge main.mb" ;;
+            "V") EXT="v"; COMPILE="v -o program main.v"; RUN_CMD="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
