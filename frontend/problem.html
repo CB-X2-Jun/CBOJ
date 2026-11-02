@@ -41,6 +41,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/julia/julia.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/pascal/pascal.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/erlang/erlang.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/mllike/mllike.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/tcl/tcl.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/commonlisp/commonlisp.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/d/d.min.js"></script>
@@ -62,13 +63,15 @@
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/befunge/befunge.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/bqn/bqn.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/elixir/elixir.min.js"></script>
-  <script src="https://cb-x2-jun.github.io/codemirror5/mode/fsharp/fsharp.min.js"></script>
+  <!-- <script src="https://cb-x2-jun.github.io/codemirror5/mode/fsharp/fsharp.min.js"></script> -->
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/fish/fish.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/icon/icon.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/malbolge/malbolge.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/nim/nim.min.js"></script>
-  <script src="https://cb-x2-jun.github.io/codemirror5/mode/ocaml/ocaml.min.js"></script>
+  <!-- <script src="https://cb-x2-jun.github.io/codemirror5/mode/ocaml/ocaml.min.js"></script> -->
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/prolog/prolog.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/thue/thue.min.js"></script>
+  <script src="https://cb-x2-jun.github.io/codemirror5/mode/v/v.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/zig/zig.min.js"></script>
   <script src="https://cb-x2-jun.github.io/codemirror5/mode/zirconium/zirconium.min.js"></script>
   <!-- 可能缺失的模式，可以回退到 plain -->
@@ -183,6 +186,7 @@
             <option value="LiveScript">LiveScript 1.6.0</option>
             <!-- <option value="Logo">Logo (UCBLogo 6.2.5)</option> -->
             <option value="Lua">Lua 5.4.6</option>
+            <option value="Malbolge">Malbolge 1.0.0</option>
             <option value="Nim">Nim 1.6.14</option>
             <option value="Objective-C">Objective-C (Clang 18.1.3)</option>
             <option value="Objective-C++">Objective-C++ (Clang 18.1.3)</option>
@@ -191,7 +195,7 @@
             <option value="Perl">Perl 5.38.2</option>
             <option value="PHP">PHP 8.3.13</option>
             <option value="Prolog">Prolog (SWI-Prolog 9.0.4)</option>
-            <option value="PyPy3">PyPy 7.3.15 (Python 3.10)</option>
+            <option value="PyPy3">PyPy 7.3.15 (Python 3)</option>
             <option value="Python3">Python 3.12.3</option>
             <option value="R">R 4.3.3</option>
             <option value="Ruby">Ruby 3.2.6</option>
@@ -203,6 +207,7 @@
             <option value="Thue">Thue (jcolag/Thue C interpreter)</option>
             <option value="Thue with l">Thue with l (从左至右确定性, jcolag/Thue C interpreter)</option>
             <option value="Typescript">TypeScript 7.0.2</option>
+            <option value="V">V 0.5.2</option>
             <option value="Zig">Zig 0.16.0</option>
             <option value="Zirconium">Zirconium (razetime/Zirconium BQN interpreter)</option>
           </select>
@@ -368,6 +373,7 @@
       'LiveScript': 'text/x-livescript',
       'Logo': 'text/x-common-lisp',
       'Lua': 'text/x-lua',
+      'Malbolge': 'text/x-malbolge',
       'Nim': 'text/x-nim',
       'Objective-C': 'text/x-objectivec',
       'Objective-C++': 'text/x-objectivec',
@@ -388,6 +394,7 @@
       'Thue': 'text/x-thue',
       'Thue with l': 'text/x-thue',
       'Typescript': 'text/typescript',
+      'V': 'text/x-v',
       'Zig': 'text/x-zig',
       'Zirconium': 'text/x-zirconium',
     };
