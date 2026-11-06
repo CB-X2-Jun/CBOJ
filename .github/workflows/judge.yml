@@ -221,6 +221,8 @@ jobs:
               make
               sudo ./v symlink
               ;;
+            "COBOL") sudo apt-get install -y gnucobol3 ;;
+            "Subleq") git clone --depth 1 https://github.com/mame/quine-relay.git /tmp/quine-relay ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -514,6 +516,8 @@ jobs:
             "BQN") EXT="bqn"; COMPILE=""; RUN_CMD="bqn main.bqn" ;;
             "Malbolge") EXT="mb"; COMPILE=""; RUN_CMD="python3 -m malbolge main.mb" ;;
             "V") EXT="v"; COMPILE="v -o program main.v"; RUN_CMD="./program" ;;
+            "COBOL") EXT="cob"; COMPILE="cobc -x -free -o program main.cob"; RUN_CMD="./program" ;;
+            "Subleq") EXT="slq"; COMPILE=""; RUN_CMD="ruby /tmp/quine-relay/vendor/subleq.rb main.slq" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
