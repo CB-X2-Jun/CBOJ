@@ -451,7 +451,28 @@ jobs:
               RUN_CMD="ceylon run cboj/1.0.0"
               SKIP_COMMON=1
               ;;
-
+              
+            "Visual Basic")
+              echo "$CODE_RAW" > Program.vb
+              # 直接手写一个最精简的 vbproj 文件，无需依赖 dotnet new
+              printf '%s\n' \
+                '<Project Sdk="Microsoft.NET.Sdk">' \
+                '  <PropertyGroup>' \
+                '    <OutputType>Exe</OutputType>' \
+                '    <TargetFramework>net8.0</TargetFramework>' \
+                '  </PropertyGroup>' \
+                '</Project>' > main.vbproj
+              
+              # 编译并捕获日志
+              if ! dotnet build main.vbproj -c Release -o out > compile_error.log 2>&1; then
+                ERROR_MSG=$(cat compile_error.log | head -c 8000 | jq -sR .)
+                curl -X POST "$CALLBACK_URL" -H "Content-Type: application/json" \
+                  -d "{\"rid\":$RID,\"status\":\"compile_error\",\"result\":$ERROR_MSG}"
+                exit 0
+              fi
+              RUN_CMD="dotnet out/main.dll"
+              SKIP_COMMON=1
+              ;;
             "Fish") EXT="fish"; COMPILE=""; RUN_CMD="fishr main.fish" ;;
             "Clojure") EXT="clj"; COMPILE=""; RUN_CMD="clojure -J-Xmx${REAL_MEM_KB}k -M main.clj" ;;
             "C") EXT="c"; COMPILE="gcc -O2 main.c -o program"; RUN_CMD="./program" ;;
@@ -520,7 +541,6 @@ jobs:
             "V") EXT="v"; COMPILE="v -o program main.v"; RUN_CMD="./program" ;;
             "COBOL") EXT="cob"; COMPILE="cobc -x -free -o program main.cob"; RUN_CMD="./program" ;;
             "Subleq") EXT="slq"; COMPILE=""; RUN_CMD="ruby /tmp/quine-relay/vendor/subleq.rb main.slq" ;;
-            "Visual Basic") EXT="vb"; COMPILE="dotnet new console -lang VB -o vbproj > /dev/null 2>&1 && cp main.vb vbproj/Program.vb && dotnet build vbproj -c Release -o vbproj/out"; RUN_CMD="dotnet vbproj/out/Program.dll" ;;
             "Object Pascal") EXT="pas"; COMPILE="fpc -Mobjfpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
