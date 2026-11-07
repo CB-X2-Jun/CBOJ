@@ -583,8 +583,8 @@ jobs:
             # 使用 timeout 运行用户程序，内置沙箱限制
             timeout --signal=SIGTERM ${HARD_TIMEOUT_SEC}s \
               bash -c "
-                ulimit -f 102400
-                ulimit -u 128
+                ulimit -f 1048576
+                ulimit -u 1024
                 ulimit -c 0
                 exec /usr/bin/time -f '%M' -o '$MEM_FILE' $RUN_CMD < '$INPUT_FILE'
               " > "$OUT_FILE" 2> "$ERR_FILE"
