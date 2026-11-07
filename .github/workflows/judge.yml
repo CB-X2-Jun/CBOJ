@@ -223,6 +223,8 @@ jobs:
               ;;
             "COBOL") sudo apt-get install -y gnucobol3 ;;
             "Subleq") git clone --depth 1 https://github.com/mame/quine-relay.git /tmp/quine-relay ;;
+            "Object Pascal") sudo apt-get install -y fpc ;;
+            "Visual Basic") sudo apt-get install -y dotnet-sdk-8.0 ;;
             "Bash") echo "Bash is built-in" ;;
             *) echo "Unknown language: $LANG"; exit 1 ;;
           esac
@@ -518,6 +520,8 @@ jobs:
             "V") EXT="v"; COMPILE="v -o program main.v"; RUN_CMD="./program" ;;
             "COBOL") EXT="cob"; COMPILE="cobc -x -free -o program main.cob"; RUN_CMD="./program" ;;
             "Subleq") EXT="slq"; COMPILE=""; RUN_CMD="ruby /tmp/quine-relay/vendor/subleq.rb main.slq" ;;
+            "Visual Basic") EXT="vb"; COMPILE="dotnet build -o out main.vb"; RUN_CMD="dotnet out/main.dll" ;;
+            "Object Pascal") EXT="pas"; COMPILE="fpc -Mobjfpc -O2 main.pas -oprogram"; RUN_CMD="./program" ;;
             *) echo "Unsupported language: $LANG"; exit 1 ;;
           esac
 
