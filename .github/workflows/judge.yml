@@ -40,7 +40,7 @@ jobs:
             "Typescript")
               sudo apt-get install -y nodejs npm
               npm init -y
-              npm install --save-dev typescript @types/node
+              npm install --save-dev typescript@7.0.2 @types/node@26.6.6
               ;;
             "Lua") sudo apt-get install -y lua5.4 ;;
             "Perl") sudo apt-get install -y perl ;;
@@ -135,11 +135,11 @@ jobs:
               ;;
             "CoffeeScript")
               sudo apt-get install -y nodejs npm
-              npm install coffeescript
+              sudo npm install -g coffeescript@2.7.1
               ;;
             "LiveScript")
               sudo apt-get install -y nodejs npm
-              sudo npm install -g livescript
+              sudo npm install -g livescript@1.6.0
               ;;
             "Zig")
               wget https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
